@@ -1797,6 +1797,7 @@ function renderLog() {
       <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
         <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;">⎙ View Quote</button>
         <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;">📦 Delivery Order</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})" title="Delete this entry">🗑</button>
       </div>
     </div>`).join('');
 }
@@ -1809,6 +1810,13 @@ function restoreAndPreview(id) {
     document.getElementById('quoteDocContent').innerHTML = entry.snapshot;
     document.getElementById('previewModal').classList.add('show');
   } catch(e) { notify('Could not load quote.'); }
+}
+
+function deleteLogEntry(id) {
+  if (!confirm('Delete this saved quote? This cannot be undone.')) return;
+  try { localStorage.removeItem('quote:' + id); } catch(e) {}
+  renderLog();
+  notify('Quote deleted.');
 }
 
 function generateDO(id) {
