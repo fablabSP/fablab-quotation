@@ -75,7 +75,16 @@
 
   /* LAYOUT */
   .app { display: grid; grid-template-columns: 1fr 320px; gap: 0; min-height: calc(100vh - 96px); }
-  .main { padding: 22px 28px; overflow-y: auto; }
+  .main { padding: 22px 28px; overflow-y: auto; transition: background 0.25s; }
+  .main.type-internal { background: #eff6ff; }
+  .main.type-internal .section { border-top: 3px solid #3b82f6; }
+  .main.type-internal .section-title { color: #1d4ed8; }
+  .main.type-external { background: #fffbeb; }
+  .main.type-external .section { border-top: 3px solid #f59e0b; }
+  .main.type-external .section-title { color: #b45309; }
+  .main.type-workshop { background: #f0fdf4; }
+  .main.type-workshop .section { border-top: 3px solid #22c55e; }
+  .main.type-workshop .section-title { color: #15803d; }
   .sidebar { background: var(--surface); border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; position: sticky; top: 96px; height: calc(100vh - 96px); box-shadow: -2px 0 8px rgba(0,0,0,0.04); }
 
   /* BUTTONS */
@@ -226,7 +235,7 @@
   .add-item-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 
   /* ACCESSORIES */
-  .acc-row { display: grid; grid-template-columns: 1fr 110px auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .acc-row { display: grid; grid-template-columns: 1fr 70px 90px 110px auto; gap: 8px; align-items: center; margin-bottom: 8px; }
 
   /* SIDEBAR */
   .sidebar-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
@@ -403,7 +412,7 @@
     .sidebar .btn { width: 100%; justify-content: center; margin-top: 8px !important; }
     .line-item { padding: 12px; }
     .line-item-header { flex-wrap: wrap; gap: 6px; }
-    .acc-row { grid-template-columns: 1fr 84px auto; }
+    .acc-row { grid-template-columns: 1fr 60px 80px 84px auto; }
     .wi-row { grid-template-columns: 1fr auto; }
     .wi-label { font-size: 11px; }
     .radio-group { flex-direction: column; gap: 4px; }
@@ -469,13 +478,26 @@
   <div class="app">
     <div class="main">
 
+      <!-- EDITING BANNER -->
+      <div id="editingBanner" style="display:none;align-items:center;justify-content:space-between;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 16px;margin:16px 22px 0;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">✏️</span>
+          <span style="font-size:12px;font-weight:700;color:#92400e;">Editing saved quote — changes will overwrite the original when you click <em>Save & Print</em>.</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="white-space:nowrap;color:#92400e;border-color:#f59e0b;" onclick="cancelEdit()">✕ Cancel Edit</button>
+      </div>
+
       <!-- PROJECT INFO -->
       <div class="section">
         <div class="section-title"><span class="section-title-icon">📄</span> Project Information</div>
         <div class="form-row">
           <div class="form-group">
+            <label>Company / Department Name</label>
+            <input type="text" id="companyName" placeholder="e.g. Singapore Polytechnic" oninput="calcTotal()">
+          </div>
+          <div class="form-group">
             <label>Client Name</label>
-            <input type="text" id="clientName" placeholder="e.g. Faculty of Engineering" oninput="calcTotal()">
+            <input type="text" id="clientName" placeholder="e.g. John Tan" oninput="calcTotal()">
           </div>
           <div class="form-group">
             <label>Job Title</label>
@@ -515,6 +537,13 @@
       <!-- ACCESSORIES -->
       <div class="section">
         <div class="section-title"><span class="section-title-icon">🔧</span> Accessories & Consumables</div>
+        <div style="display:grid;grid-template-columns:1fr 70px 90px 110px auto;gap:8px;margin-bottom:4px;padding:0 2px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);">Description</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);">Qty</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);">Unit</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);">Cost / Unit ($)</div>
+          <div></div>
+        </div>
         <div id="accessories"></div>
         <button class="add-item-btn" onclick="addAccessory()" style="margin-top:6px;">+ Add Accessory</button>
       </div>
@@ -816,8 +845,8 @@
         <select id="fySelect" onchange="renderLog()" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:12px;">
           <option value="26">FY26 (Apr 2025 – Mar 2026)</option>
           <option value="27">FY27 (Apr 2026 – Mar 2027)</option>
-          <option value="25">FY25 (Apr 2024 – Mar 2025)</option>
-          <option value="24">FY24 (Apr 2023 – Mar 2024)</option>
+          <option value="28">FY28 (Apr 2027 – Mar 2028)</option>
+          <option value="29">FY29 (Apr 2028 – Mar 2029)</option>
         </select>
       </div>
     </div>
@@ -965,6 +994,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refNo').value = d.getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
   addLineItem();
   addAccessory();
+  updateQuoteType();
   calcTotal();
 });
 
@@ -1166,7 +1196,16 @@ function addAccessory() {
   div.id = `acc-${id}`;
   div.innerHTML = `
     <input type="text" placeholder="e.g. M3 screws, paint" id="acc-desc-${id}">
-    <input type="number" placeholder="0.00" id="acc-cost-${id}" min="0" step="0.01" oninput="calcTotal()">
+    <input type="number" placeholder="Qty" id="acc-qty-${id}" value="1" min="1" step="1" oninput="calcTotal()" style="text-align:center;">
+    <select id="acc-unit-${id}" style="font-size:12px;" onchange="calcTotal()">
+      <option value="pcs">pcs</option>
+      <option value="lot">lot</option>
+      <option value="roll">roll</option>
+      <option value="set">set</option>
+      <option value="box">box</option>
+      <option value="m">m</option>
+    </select>
+    <input type="number" placeholder="$/unit" id="acc-cost-${id}" min="0" step="0.01" oninput="calcTotal()">
     <button class="btn btn-danger" onclick="removeAcc(${id})">✕</button>`;
   document.getElementById('accessories').appendChild(div);
 }
@@ -1234,6 +1273,13 @@ function updateQuoteType() {
   if (designFields) designFields.style.display = isWorkshop ? 'none' : '';
   if (expeditedFields) expeditedFields.style.display = isWorkshop ? 'none' : '';
 
+  // Colour-code main panel
+  const mainEl = document.querySelector('.main');
+  if (mainEl) {
+    mainEl.classList.remove('type-internal','type-external','type-workshop');
+    mainEl.classList.add('type-' + type);
+  }
+
   calcTotal();
 }
 
@@ -1300,7 +1346,11 @@ function calcTotal() {
   });
 
   let accTotal = 0;
-  document.querySelectorAll('[id^="acc-cost-"]').forEach(el => { accTotal += parseFloat(el.value)||0; });
+  document.querySelectorAll('[id^="acc-cost-"]').forEach(el => {
+    const id = el.id.replace('acc-cost-','');
+    const qty = parseFloat(document.getElementById('acc-qty-'+id)?.value||1);
+    accTotal += (parseFloat(el.value)||0) * qty;
+  });
 
   let subtotal = totalMat + totalMachine + accTotal;
   const helpersOn = document.getElementById('toggleHelpers').checked;
@@ -1566,6 +1616,7 @@ function removeWorkshopItem(id, type) {
 function buildQuoteDoc() {
   calcTotal();
   const d = window.__qd || {};
+  const companyName = document.getElementById('companyName').value || '';
   const clientName = document.getElementById('clientName').value || '—';
   const jobTitle = document.getElementById('jobTitle').value || '—';
   const rawRef = document.getElementById('refNo').value || '';
@@ -1602,8 +1653,11 @@ function buildQuoteDoc() {
       const id = el.id.replace('acc-desc-','');
       const cost = parseFloat(document.getElementById('acc-cost-'+id)?.value||0);
       if (el.value || cost > 0) {
+        const accQty = parseFloat(document.getElementById('acc-qty-'+id)?.value||1);
+        const accUnit = document.getElementById('acc-unit-'+id)?.value || 'pcs';
+        const accLineTotal = cost * accQty;
         rows += '<tr><td>' + (el.value||'Accessory') + '<div class="qdoc-desc-detail">Accessory / Consumable</div></td>'
-          + '<td style="text-align:center">1</td><td class="r">$' + cost.toFixed(2) + '</td><td class="r">$0.00</td><td class="r">$' + cost.toFixed(2) + '</td></tr>';
+          + '<td style="text-align:center">' + accQty + ' ' + accUnit + '</td><td class="r">$' + cost.toFixed(2) + '</td><td class="r">$0.00</td><td class="r">$' + accLineTotal.toFixed(2) + '</td></tr>';
       }
     });
   }
@@ -1709,6 +1763,7 @@ function buildQuoteDoc() {
     +   '</div>'
     + '</div>'
     + '<div class="qdoc-client">'
+    +   (companyName ? '<div class="qdoc-client-section"><h4>Company / Department</h4><p>' + companyName + '</p></div>' : '')
     +   '<div class="qdoc-client-section"><h4>Client</h4><p>' + clientName + '</p></div>'
     +   '<div class="qdoc-client-section"><h4>' + (isWorkshop ? 'Course / Programme' : 'Job Title') + '</h4><p>' + jobTitle + '</p></div>'
     + '</div>'
@@ -1843,6 +1898,7 @@ function collectFormState() {
   const type = document.querySelector('input[name="quoteType"]:checked').value;
   const state = {
     type,
+    companyName: document.getElementById('companyName')?.value || '',
     clientName:  document.getElementById('clientName').value,
     jobTitle:    document.getElementById('jobTitle').value,
     refNo:       document.getElementById('refNo').value,
@@ -1908,6 +1964,8 @@ function collectFormState() {
     const id = el.id.replace('acc-desc-','');
     state.accessories.push({
       desc: el.value,
+      qty:  document.getElementById('acc-qty-'+id)?.value  || '1',
+      unit: document.getElementById('acc-unit-'+id)?.value || 'pcs',
       cost: document.getElementById('acc-cost-'+id)?.value || '0'
     });
   });
@@ -2047,7 +2105,7 @@ function renderLog() {
         <div>
           <div class="log-item-title">${e.client} — ${e.jobTitle}</div>
           <div class="log-item-meta">${e.refNo} · ${formatDate(e.date)} · <span class="badge badge-${e.type}">${e.type === 'workshop' ? 'Workshop' : e.type.charAt(0).toUpperCase()+e.type.slice(1)}</span></div>
-          <div class="log-item-meta" style="margin-top:2px;">Saved: ${new Date(e.saved).toLocaleString()}</div>
+          <div class="log-item-meta" style="margin-top:2px;">Saved: ${new Date(e.saved).toLocaleString()}${e.savedEdited ? ' · <span style="color:#f59e0b;font-weight:700;">Edited: '+new Date(e.savedEdited).toLocaleString()+'</span>' : ''}</div>
         </div>
         <div class="log-item-total">$${e.total.toFixed(2)}</div>
       </div>
@@ -2055,7 +2113,7 @@ function renderLog() {
         <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;min-width:90px;">⎙ View</button>
         <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;min-width:90px;">📦 DO</button>
         <button class="btn btn-sm" onclick="duplicateEntry(${e.id})" style="flex:1;min-width:90px;background:#f0fdf4;border:1px solid #86efac;color:#15803d;font-weight:700;">⧉ Duplicate</button>
-        <button class="btn btn-sm" onclick="openEditModal(${e.id})" style="flex:1;min-width:90px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-weight:700;">✏️ Edit</button>
+        <button class="btn btn-sm" onclick="editEntry(${e.id})" style="flex:1;min-width:90px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-weight:700;">✏️ Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})" title="Delete">🗑</button>
       </div>
     </div>`).join('');
@@ -2275,6 +2333,8 @@ function restoreFormState(state) {
   if (radio) { radio.checked = true; updateQuoteType(); }
 
   // Basic fields
+  const companyEl2 = document.getElementById('companyName');
+  if (companyEl2) companyEl2.value = state.companyName || '';
   document.getElementById('clientName').value = state.clientName || '';
   document.getElementById('jobTitle').value   = state.jobTitle || '';
   document.getElementById('refNo').value       = state.refNo || '';
@@ -2370,8 +2430,12 @@ function restoreFormState(state) {
       addAccessory();
       const id = accessoryCount;
       const descEl = document.getElementById('acc-desc-'+id);
+      const qtyEl  = document.getElementById('acc-qty-'+id);
+      const unitEl = document.getElementById('acc-unit-'+id);
       const costEl = document.getElementById('acc-cost-'+id);
       if (descEl) descEl.value = acc.desc || '';
+      if (qtyEl)  qtyEl.value  = acc.qty  || '1';
+      if (unitEl) unitEl.value = acc.unit || 'pcs';
       if (costEl) costEl.value = acc.cost || '0';
     });
   }
@@ -2410,6 +2474,8 @@ function resetForm() {
   document.getElementById('lineItems').innerHTML = '';
   document.getElementById('accessories').innerHTML = '';
   lineItemCount = 0; accessoryCount = 0;
+  const compN = document.getElementById('companyName');
+  if (compN) compN.value = '';
   document.getElementById('clientName').value = '';
   document.getElementById('jobTitle').value = '';
   document.getElementById('toggleDesign').checked = false;
@@ -2695,6 +2761,40 @@ function renderFYSummary(entries) {
         </div>
       </div>`).join('');
   }
+}
+
+
+// ============================================================
+// EDIT ENTRY — Full page edit via builder
+// ============================================================
+let editingEntryId = null;  // tracks if we are editing an existing log entry
+
+function editEntry(id) {
+  try {
+    const raw = localStorage.getItem('quote:' + id);
+    if (!raw) { notify('Could not find quote.'); return; }
+    const entry = JSON.parse(raw);
+    if (!entry.formState) {
+      notify('This quote was saved before edit is supported. Please use Duplicate instead.');
+      return;
+    }
+    editingEntryId = id;
+    // Switch to builder
+    const builderTab = document.querySelector('.tab');
+    switchTab('builder', builderTab);
+    restoreFormState(entry.formState);
+    // Show editing banner
+    const banner = document.getElementById('editingBanner');
+    if (banner) { banner.style.display = 'flex'; }
+    notify('Quote loaded for editing — make your changes and click "Save & Print".');
+  } catch(e) { notify('Could not load quote for editing.'); }
+}
+
+function cancelEdit() {
+  editingEntryId = null;
+  const banner = document.getElementById('editingBanner');
+  if (banner) banner.style.display = 'none';
+  notify('Edit cancelled.');
 }
 
 </script>
