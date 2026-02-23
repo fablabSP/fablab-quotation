@@ -462,7 +462,8 @@
   <div class="header-actions">
     <button class="btn btn-ghost btn-sm" onclick="resetForm()">↺ Reset</button>
     <button class="btn btn-secondary btn-sm" onclick="showPreview()">⎙ Preview</button>
-    <button class="btn btn-primary btn-sm" onclick="saveAndPrint()">💾 Save & Print</button>
+    <button id="headerSaveBtn" class="btn btn-primary btn-sm" onclick="saveQuote()">💾 Save</button>
+    <button class="btn btn-secondary btn-sm" onclick="printCurrent()">🖨 Print</button>
   </div>
 </div>
 
@@ -482,7 +483,7 @@
       <div id="editingBanner" style="display:none;align-items:center;justify-content:space-between;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 16px;margin:16px 22px 0;gap:12px;">
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:16px;">✏️</span>
-          <span style="font-size:12px;font-weight:700;color:#92400e;">Editing saved quote — changes will overwrite the original when you click <em>Save & Print</em>.</span>
+          <span style="font-size:12px;font-weight:700;color:#92400e;">Editing saved quote — make changes and click <em>Update</em> to overwrite the original.</span>
         </div>
         <button class="btn btn-ghost btn-sm" style="white-space:nowrap;color:#92400e;border-color:#f59e0b;" onclick="cancelEdit()">✕ Cancel Edit</button>
       </div>
@@ -500,8 +501,8 @@
             <input type="text" id="clientName" placeholder="e.g. John Tan" oninput="calcTotal()">
           </div>
           <div class="form-group">
-            <label>Job Title</label>
-            <input type="text" id="jobTitle" placeholder="e.g. FYP Exhibition Display" oninput="calcTotal()">
+            <label>Project Title</label>
+            <input type="text" id="jobTitle" placeholder="e.g. FYP Exhibition Display, STEM Workshop" oninput="calcTotal()">
           </div>
         </div>
         <div class="form-row form-row-3">
@@ -795,7 +796,8 @@
       </div>
 
       <button class="btn btn-primary" style="width:100%;margin-top:12px;justify-content:center;" onclick="showPreview()">Preview Quote →</button>
-      <button class="btn btn-secondary" style="width:100%;margin-top:8px;justify-content:center;" onclick="saveAndPrint()">Save & Print PDF</button>
+      <button id="sidebarSaveBtn" class="btn btn-secondary" style="width:100%;margin-top:8px;justify-content:center;" onclick="saveQuote()">💾 Save</button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center;border:1px solid var(--border);" onclick="printCurrent()">🖨 Print</button>
     </div>
   </div>
 </div>
@@ -848,6 +850,7 @@
           <option value="28">FY28 (Apr 2027 – Mar 2028)</option>
           <option value="29">FY29 (Apr 2028 – Mar 2029)</option>
         </select>
+        <button onclick="downloadFYSummary()" style="margin-top:10px;width:100%;padding:8px 0;background:#f0fdf4;border:1px solid #86efac;color:#15803d;font-weight:700;font-size:12px;border-radius:6px;cursor:pointer;font-family:var(--font);">⬇ Download FY Summary (CSV)</button>
       </div>
     </div>
 
@@ -866,7 +869,7 @@
       <input type="text" id="editClientName" style="width:100%;">
     </div>
     <div class="form-group" style="margin-bottom:12px;">
-      <label>Job Title</label>
+      <label>Project Title</label>
       <input type="text" id="editJobTitle" style="width:100%;">
     </div>
     <div class="form-row" style="margin-bottom:12px;">
@@ -956,7 +959,8 @@
     <div class="modal-toolbar">
       <span class="modal-toolbar-title">Quote Preview</span>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-primary btn-sm" onclick="printDoc()">🖨 Print / Save PDF</button>
+        <button class="btn btn-primary btn-sm" onclick="printDocOnly()">🖨 Print</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveDocAsPDF()">💾 Save PDF</button>
         <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:#444;" onclick="closePreview()">✕ Close</button>
       </div>
     </div>
@@ -1765,7 +1769,7 @@ function buildQuoteDoc() {
     + '<div class="qdoc-client">'
     +   (companyName ? '<div class="qdoc-client-section"><h4>Company / Department</h4><p>' + companyName + '</p></div>' : '')
     +   '<div class="qdoc-client-section"><h4>Client</h4><p>' + clientName + '</p></div>'
-    +   '<div class="qdoc-client-section"><h4>' + (isWorkshop ? 'Course / Programme' : 'Job Title') + '</h4><p>' + jobTitle + '</p></div>'
+    +   '<div class="qdoc-client-section"><h4>' + (isWorkshop ? 'Course / Programme' : 'Project Title') + '</h4><p>' + jobTitle + '</p></div>'
     + '</div>'
     + '<table class="qdoc-table"><thead><tr>'
     +   (isWorkshop
@@ -1883,13 +1887,21 @@ function printWithTitle(content, title, isFullDoc) {
   }
 }
 
-function printDoc() {
+function printDocOnly() {
+  // Open in new tab and trigger browser print dialog (Ctrl+P style)
   const content = document.getElementById('quoteDocContent').innerHTML;
-  // Try to get title from data attr set when preview was opened
   const modal = document.getElementById('previewModal');
   const title = modal.dataset.printTitle || 'SP-FabLab-Quote';
   printWithTitle(content, title, false);
 }
+
+function saveDocAsPDF() {
+  // Same as printDocOnly for now — browser will offer "Save as PDF" in the dialog
+  printDocOnly();
+}
+
+// Legacy alias
+function printDoc() { printDocOnly(); }
 
 // ============================================================
 // SAVE & PRINT
@@ -2034,14 +2046,47 @@ function collectItems() {
   return items;
 }
 
-function saveAndPrint() {
-  showPreview();
+function saveQuote() {
+  calcTotal();
   const d = window.__qd || {};
   const type = document.querySelector('input[name="quoteType"]:checked').value;
   const client = document.getElementById('clientName').value || 'Unknown';
   const rawRef = document.getElementById('refNo').value || '';
   const refNo = type === 'workshop' ? rawRef : ('SP-TTC/' + rawRef);
   const snapshot = buildQuoteDoc();
+
+  // If editing, overwrite existing entry
+  if (editingEntryId) {
+    try {
+      const origRaw = localStorage.getItem('quote:' + editingEntryId);
+      if (origRaw) {
+        const orig = JSON.parse(origRaw);
+        const entry = {
+          id: orig.id,
+          type,
+          client,
+          jobTitle: document.getElementById('jobTitle').value || '—',
+          refNo,
+          date: document.getElementById('quoteDate').value,
+          total: d.grand || 0,
+          items: collectItems(),
+          formState: collectFormState(),
+          snapshot,
+          saved: orig.saved,
+          savedEdited: new Date().toISOString()
+        };
+        localStorage.removeItem('quote:' + editingEntryId);
+        localStorage.setItem('quote:' + entry.id, JSON.stringify(entry));
+        editingEntryId = null;
+        const banner = document.getElementById('editingBanner');
+        if (banner) banner.style.display = 'none';
+        updateSaveBtnLabels(false);
+        notify('Quote updated ✓');
+        return;
+      }
+    } catch(e) {}
+  }
+
   const entry = {
     id: Date.now(),
     type,
@@ -2056,12 +2101,22 @@ function saveAndPrint() {
     saved: new Date().toISOString()
   };
   saveToLog(entry);
-
-  // Open print dialog with suggested filename as page title
-  const filename = makeFilename('', refNo, client);
-  printWithTitle(snapshot, filename);
-  notify('Quote saved ✓  —  save as PDF: "' + filename + '"');
+  notify('Quote saved ✓  —  click Print to save as PDF.');
 }
+
+function printCurrent() {
+  calcTotal();
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const client = document.getElementById('clientName').value || 'Unknown';
+  const rawRef = document.getElementById('refNo').value || '';
+  const refNo = type === 'workshop' ? rawRef : ('SP-TTC/' + rawRef);
+  const snapshot = buildQuoteDoc();
+  const filename = makeFilename('', refNo, client);
+  printWithTitle(snapshot, filename, false);
+}
+
+// Legacy alias kept for any inline references
+function saveAndPrint() { saveQuote(); }
 
 // ============================================================
 // STORAGE / LOG
@@ -2111,7 +2166,7 @@ function renderLog() {
       </div>
       <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;min-width:90px;">⎙ View</button>
-        <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;min-width:90px;">📦 DO</button>
+        <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;min-width:140px;">📦 Generate Delivery Order</button>
         <button class="btn btn-sm" onclick="duplicateEntry(${e.id})" style="flex:1;min-width:90px;background:#f0fdf4;border:1px solid #86efac;color:#15803d;font-weight:700;">⧉ Duplicate</button>
         <button class="btn btn-sm" onclick="editEntry(${e.id})" style="flex:1;min-width:90px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-weight:700;">✏️ Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})" title="Delete">🗑</button>
@@ -2236,7 +2291,7 @@ function generateDO(id) {
       '</div>',
       '<div class="client-block">',
       '  <div><h4>Deliver To</h4><p>' + entry.client + '</p></div>',
-      '  <div><h4>Job Title</h4><p>' + entry.jobTitle + '</p></div>',
+      '  <div><h4>Project Title</h4><p>' + entry.jobTitle + '</p></div>',
       '</div>',
       '<div class="notice">&#9888; Please inspect all items carefully upon collection. Report any discrepancies or damage to FabLab staff <b>before signing</b> this Delivery Order.</div>',
       '<table>',
@@ -2764,6 +2819,20 @@ function renderFYSummary(entries) {
 }
 
 
+
+// ── Update save button labels when entering/exiting edit mode ──
+function updateSaveBtnLabels(isEditing) {
+  const headerBtn   = document.getElementById('headerSaveBtn');
+  const sidebarBtn  = document.getElementById('sidebarSaveBtn');
+  if (isEditing) {
+    if (headerBtn)  { headerBtn.textContent  = '✏️ Update'; headerBtn.style.background = '#d97706'; headerBtn.style.borderColor = '#d97706'; }
+    if (sidebarBtn) { sidebarBtn.textContent = '✏️ Update'; }
+  } else {
+    if (headerBtn)  { headerBtn.textContent  = '💾 Save'; headerBtn.style.background = ''; headerBtn.style.borderColor = ''; }
+    if (sidebarBtn) { sidebarBtn.textContent = '💾 Save'; }
+  }
+}
+
 // ============================================================
 // EDIT ENTRY — Full page edit via builder
 // ============================================================
@@ -2786,7 +2855,8 @@ function editEntry(id) {
     // Show editing banner
     const banner = document.getElementById('editingBanner');
     if (banner) { banner.style.display = 'flex'; }
-    notify('Quote loaded for editing — make your changes and click "Save & Print".');
+    updateSaveBtnLabels(true);
+    notify('Quote loaded for editing — make your changes and click "Update".');
   } catch(e) { notify('Could not load quote for editing.'); }
 }
 
@@ -2794,7 +2864,58 @@ function cancelEdit() {
   editingEntryId = null;
   const banner = document.getElementById('editingBanner');
   if (banner) banner.style.display = 'none';
+  updateSaveBtnLabels(false);
   notify('Edit cancelled.');
+}
+
+
+function downloadFYSummary() {
+  const fy = document.getElementById('fySelect')?.value || '26';
+  const { start, end } = getFYBounds(fy);
+  const allEntries = getLog();
+  const fyEntries = allEntries.filter(e => {
+    const d = new Date(e.date);
+    return d >= start && d <= end;
+  }).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  if (fyEntries.length === 0) { notify('No quotes found for FY' + fy + '.'); return; }
+
+  // Build CSV
+  const rows = [['Ref No','Date','Client','Project Title','Type','Total (SGD)','Saved']];
+  fyEntries.forEach(e => {
+    rows.push([
+      '"' + (e.refNo || '').replace(/"/g,'""') + '"',
+      e.date || '',
+      '"' + (e.client || '').replace(/"/g,'""') + '"',
+      '"' + (e.jobTitle || '').replace(/"/g,'""') + '"',
+      e.type || '',
+      e.total ? e.total.toFixed(2) : '0.00',
+      e.saved ? new Date(e.saved).toLocaleDateString() : ''
+    ]);
+  });
+
+  // Summary footer
+  const total = fyEntries.reduce((s,e) => s + (e.total||0), 0);
+  const intTotal = fyEntries.filter(e=>e.type==='internal').reduce((s,e)=>s+(e.total||0),0);
+  const extTotal = fyEntries.filter(e=>e.type==='external').reduce((s,e)=>s+(e.total||0),0);
+  const wsTotal  = fyEntries.filter(e=>e.type==='workshop').reduce((s,e)=>s+(e.total||0),0);
+  rows.push([]);
+  rows.push(['"=== FY' + fy + ' SUMMARY ==="']);
+  rows.push(['"Total Quotes"', fyEntries.length]);
+  rows.push(['"FY Grand Total"', total.toFixed(2)]);
+  rows.push(['"Internal Total"', intTotal.toFixed(2)]);
+  rows.push(['"External Total"', extTotal.toFixed(2)]);
+  rows.push(['"Workshop Total"', wsTotal.toFixed(2)]);
+
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'FY' + fy + '_Quote_Summary.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  notify('FY' + fy + ' summary downloaded.');
 }
 
 </script>
