@@ -329,6 +329,104 @@
   .notif { position: fixed; bottom: 20px; right: 20px; background: #1a1d23; color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 9999; transform: translateY(80px); transition: transform 0.25s; box-shadow: var(--shadow-md); }
   .notif.show { transform: translateY(0); }
 
+  /* ── RESPONSIVE BREAKPOINTS ─────────────────────────────── */
+
+  /* Large screens (1280px+) — wider sidebar */
+  @media (min-width: 1280px) {
+    .app { grid-template-columns: 1fr 360px; }
+  }
+
+  /* Medium (1100px) — tighten up */
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr 270px; }
+    .main { padding: 18px 20px; }
+    .header { padding: 0 20px; }
+    .tabs { padding: 0 20px; }
+    .header-subtitle { display: none; }
+    .header-divider { display: none; }
+    .form-row-4 { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Tablet (≤900px) — sidebar moves to bottom strip */
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: static;
+      height: auto;
+      border-left: none;
+      border-top: 2px solid var(--border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .sidebar-section { margin-bottom: 0; }
+    .sidebar-section:first-child { grid-column: 1 / -1; }
+    .sidebar .fine-print { grid-column: 1 / -1; }
+    .sidebar .btn { margin-top: 4px !important; }
+    .form-row-3 { grid-template-columns: 1fr 1fr; }
+    .form-row-4 { grid-template-columns: 1fr 1fr; }
+    .wi-row { grid-template-columns: 130px 1fr auto; }
+    .modal-box { border-radius: 0; max-width: 100%; }
+    .modal-overlay { align-items: flex-start; padding: 0; }
+  }
+
+  /* Mobile (≤600px) — full single column */
+  @media (max-width: 600px) {
+    .header { padding: 0 14px; height: 52px; }
+    .header-title { font-size: 13px; }
+    .header-actions { gap: 5px; }
+    .tabs { padding: 0 12px; }
+    .tab { padding: 9px 12px; font-size: 12px; }
+    .main { padding: 12px; }
+    .section { padding: 12px; margin-bottom: 10px; }
+    .section-title { font-size: 13px; }
+    .form-row { grid-template-columns: 1fr; }
+    .form-row-3 { grid-template-columns: 1fr; }
+    .form-row-4 { grid-template-columns: 1fr 1fr; }
+    .sidebar {
+      display: block;
+      position: static;
+      height: auto;
+      border-left: none;
+      border-top: 2px solid var(--border);
+      padding: 14px;
+    }
+    .sidebar .btn { width: 100%; justify-content: center; margin-top: 8px !important; }
+    .line-item { padding: 12px; }
+    .line-item-header { flex-wrap: wrap; gap: 6px; }
+    .acc-row { grid-template-columns: 1fr 84px auto; }
+    .wi-row { grid-template-columns: 1fr auto; }
+    .wi-label { font-size: 11px; }
+    .radio-group { flex-direction: column; gap: 4px; }
+    .log-filters { flex-wrap: wrap; }
+    .filter-btn { font-size: 11px; padding: 5px 10px; }
+    .modal-toolbar { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+    .modal-toolbar-title { font-size: 13px; }
+    .date-mode-btn { font-size: 11px; padding: 5px 10px; }
+    .specific-date-row { flex-wrap: wrap; }
+    .summary-line { font-size: 11px; }
+    .summary-total { font-size: 14px; }
+    .tax-note { font-size: 10px; }
+    #workshopBtnGroup { flex-direction: column; }
+    #workshopBtnGroup .add-item-btn { min-width: unset; }
+  }
+
+  /* Extra small (≤400px) */
+  @media (max-width: 400px) {
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .main { padding: 8px; }
+    .section { padding: 10px; }
+    .form-row-4 { grid-template-columns: 1fr; }
+    .header-title { font-size: 12px; }
+  }
+
+  /* Collapsible sidebar on mobile */
+  .sidebar-collapsed > *:not(.sidebar-section:first-child) { display: none !important; }
+  .sidebar-collapsed { padding-bottom: 8px; }
+
   @media print {
     body { background: #fff; }
     .header, .tabs, .sidebar, .header-actions { display: none !important; }
@@ -635,11 +733,15 @@
     </div>
 
     <!-- SIDEBAR -->
-    <div class="sidebar">
+    <div class="sidebar" id="mainSidebar">
       <div class="sidebar-section">
         <div class="sidebar-title">
-          Summary
-          <span id="quoteBadge" class="badge badge-internal">Internal</span>
+          <span style="display:flex;align-items:center;gap:8px;">
+            Summary
+            <span id="quoteBadge" class="badge badge-internal">Internal</span>
+          </span>
+          <!-- Collapse toggle — visible on mobile/tablet only -->
+          <button id="sidebarToggleBtn" onclick="toggleSidebar()" style="display:none;background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted);padding:2px 4px;" title="Collapse summary">▲</button>
         </div>
       </div>
 
@@ -1844,6 +1946,22 @@ function generateDO(id) {
   }
 }
 
+
+function toggleSidebar() {
+  const inner = document.getElementById('mainSidebar');
+  const btn = document.getElementById('sidebarToggleBtn');
+  const isCollapsed = inner.classList.toggle('sidebar-collapsed');
+  btn.textContent = isCollapsed ? '▼' : '▲';
+  btn.title = isCollapsed ? 'Expand summary' : 'Collapse summary';
+}
+
+function checkSidebarToggleVisibility() {
+  const btn = document.getElementById('sidebarToggleBtn');
+  if (!btn) return;
+  btn.style.display = window.innerWidth <= 900 ? 'block' : 'none';
+}
+window.addEventListener('resize', checkSidebarToggleVisibility);
+document.addEventListener('DOMContentLoaded', checkSidebarToggleVisibility);
 
 function clearLog() {
   if (!confirm('Clear all saved quotes? This cannot be undone.')) return;
