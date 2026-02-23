@@ -2317,7 +2317,7 @@ function generateDO(id) {
       '  SP FabLab &middot; Department of Academic Quality &amp; Resources &middot; 500 Dover Road, S139651<br>',
       '  DO No: ' + doNum + ' &middot; Quote Ref: ' + entry.refNo + ' &middot; Printed: ' + doDate,
       '</div>',
-      '<scr' + 'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print();},800);});</scr' + 'ipt>',
+      '<scr' + 'ipt>/* print triggered by opener */</' + 'script>',
       '</body></html>'
     ];
 
@@ -2524,25 +2524,107 @@ function duplicateEntry(id) {
 }
 
 function resetForm() {
-  if (!confirm('Reset all fields? Saved quotes in the log will be kept.')) return;
-  document.getElementById('lineItems').innerHTML = '';
-  document.getElementById('accessories').innerHTML = '';
-  lineItemCount = 0; accessoryCount = 0;
+  if (!confirm('Reset all fields? This will clear everything in the Quote Builder.\n\nSaved quotes in the Quote Log will NOT be affected.')) return;
+
+  // ── Project info ──────────────────────────────────────────────
   const compN = document.getElementById('companyName');
   if (compN) compN.value = '';
   document.getElementById('clientName').value = '';
   document.getElementById('jobTitle').value = '';
-  document.getElementById('toggleDesign').checked = false;
-  document.getElementById('toggleExpedited').checked = false;
-  document.getElementById('expeditedFields').classList.remove('show');
-  document.getElementById('toggleHelpers').checked = false;
-  document.getElementById('designFields').classList.remove('show');
-  document.getElementById('helperFields').classList.remove('show');
+
+  // Auto-reset ref no and date
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2,'0');
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const yyyy = today.getFullYear();
+  const shortYear = String(yyyy).slice(-2);
+  document.getElementById('refNo').value = shortYear + '-001';
+  document.getElementById('quoteDate').value = yyyy + '-' + mm + '-' + dd;
+
+  // ── Quote type → reset to Internal ───────────────────────────
   document.querySelector('input[name="quoteType"][value="internal"]').checked = true;
+
+  // ── Line items & accessories ──────────────────────────────────
+  document.getElementById('lineItems').innerHTML = '';
+  document.getElementById('accessories').innerHTML = '';
+  lineItemCount = 0; accessoryCount = 0;
+
+  // ── Fees toggles — all off ────────────────────────────────────
+  ['toggleDesign','toggleExpedited','toggleHelpers','toggleStaff','toggleProjExp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = false;
+  });
+  ['designFields','expeditedFields','helperFields','staffFields','projExpFields'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+
+  // ── Design fee defaults ───────────────────────────────────────
+  const dm = document.getElementById('designMode');
+  if (dm) dm.value = 'percent';
+  const dv = document.getElementById('designValue');
+  if (dv) dv.value = '20';
+  updateDesignValueLabel();
+
+  // ── Student helpers defaults ──────────────────────────────────
+  const hc = document.getElementById('helperCount');
+  if (hc) hc.value = '1';
+  const hh = document.getElementById('helperHours');
+  if (hh) hh.value = '0';
+
+  // ── Staff charges defaults ────────────────────────────────────
+  const sr = document.getElementById('staffRate');
+  if (sr) sr.value = '0';
+  const sh = document.getElementById('staffHours');
+  if (sh) sh.value = '0';
+  const sc = document.getElementById('staffCount');
+  if (sc) sc.value = '1';
+
+  // ── Project expenses defaults ─────────────────────────────────
+  const pe = document.getElementById('projExpAmount');
+  if (pe) pe.value = '0';
+  const pd = document.getElementById('projExpDesc');
+  if (pd) pd.value = '';
+
+  // ── Workshop / Course fields ──────────────────────────────────
+  // Reset date mode to continuous
+  setDateMode('continuous');
+  const dateFrom = document.getElementById('dateFrom');
+  if (dateFrom) dateFrom.value = '';
+  const dateTo = document.getElementById('dateTo');
+  if (dateTo) dateTo.value = '';
+  // Clear specific dates
+  const specList = document.getElementById('specificDatesList');
+  if (specList) specList.innerHTML = '';
+  // Clear course components (workshop items)
+  const wsItems = document.getElementById('workshopItems');
+  if (wsItems) wsItems.innerHTML = '';
+  // Re-enable all workshop module add-buttons (remove 'used' class added by addWorkshopItem)
+  document.querySelectorAll('.wi-btn').forEach(btn => {
+    btn.classList.remove('used');
+  });
+  // Also reset the workshopItemCount
+  workshopItemCount = 0;
+  // Clear overall course fee
+  const ocf = document.getElementById('overallCoursePrice');
+  if (ocf) ocf.value = '';
+  const ocn = document.getElementById('overallCoursePriceNote');
+  if (ocn) ocn.value = '';
+
+  // ── Cancel any active edit mode ───────────────────────────────
+  if (editingEntryId) {
+    editingEntryId = null;
+    const banner = document.getElementById('editingBanner');
+    if (banner) banner.style.display = 'none';
+    updateSaveBtnLabels(false);
+  }
+
+  // ── Re-apply quote type UI, add default items ─────────────────
   updateQuoteType();
   addLineItem();
   addAccessory();
   calcTotal();
+  notify('Quote Builder cleared.');
 }
 
 // ============================================================
