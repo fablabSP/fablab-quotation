@@ -911,6 +911,11 @@ function onMaterialChange(id) {
   const fieldsDiv = document.getElementById(`li-fields-${id}`);
   const machineSelect = document.getElementById(`li-machine-${id}`);
   machineSelect.disabled = true;
+  // Re-show hrs/machine in case switching away from vinyl
+  const hrsGroup = document.getElementById(`li-hrs-${id}`)?.closest('.form-group');
+  const machineGroup = machineSelect?.closest('.form-group');
+  if (hrsGroup) hrsGroup.style.display = '';
+  if (machineGroup) machineGroup.style.display = '';
 
   if (type === 'acrylic') {
     fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2'], [3,5,10]);
@@ -919,13 +924,25 @@ function onMaterialChange(id) {
     fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2'], [3,5]);
     setMachine(machineSelect, 'laser_cutter');
   } else if (type === 'vinyl') {
-    fieldsDiv.innerHTML = `<div class="form-row"><div class="form-group"><label>Tier</label><select id="li-tier-${id}" onchange="calcTotal()">
-      <option value="small">Small — up to 0.3m ($20)</option>
-      <option value="medium">Medium — 0.3m–1m ($45)</option>
-      <option value="large">Large — 1m–2m ($85)</option>
-      <option value="xlarge">Extra Large — 2m–5m ($200)</option>
-    </select></div></div>`;
-    setMachine(machineSelect, 'large_format');
+    fieldsDiv.innerHTML = `<div class="form-row">
+      <div class="form-group"><label>Size</label><select id="li-tier-${id}" onchange="updateVinylPrice(${id}); calcTotal()">
+        <option value="small">Small — up to 0.3m</option>
+        <option value="medium">Medium — 0.3m to 1m</option>
+        <option value="large">Large — 1m to 2m</option>
+        <option value="xlarge">Extra Large — 2m to 5m</option>
+      </select></div>
+      <div class="form-group"><label>Price</label>
+        <input type="text" id="li-vinyl-price-${id}" readonly style="font-weight:700;color:var(--accent);">
+      </div>
+    </div>`;
+    // Hide hours, disable machine (included in flat rate)
+    const hrsRow = document.getElementById('li-hrs-${id}')?.closest('.form-group');
+    const machineRow = document.getElementById('li-machine-${id}')?.closest('.form-group');
+    if (hrsRow) hrsRow.style.display = 'none';
+    if (machineRow) machineRow.style.display = 'none';
+    machineSelect.disabled = true;
+    machineSelect.innerHTML = '<option value="">Included in price</option>';
+    updateVinylPrice(id);
   } else if (type === 'cardboard_single' || type === 'cardboard_double') {
     fieldsDiv.innerHTML = `<div class="form-row">
       <div class="form-group"><label>Thickness</label><select id="li-thick-${id}" onchange="calcTotal()">
@@ -972,6 +989,13 @@ function sizeThickFields(id, sizes, thicknesses) {
       ${thicknesses.map(t=>`<option value="${t}">${t}mm</option>`).join('')}
     </select></div>
   </div>`;
+}
+
+function updateVinylPrice(id) {
+  const tier = document.getElementById('li-tier-'+id)?.value || 'small';
+  const prices = { small:20, medium:45, large:85, xlarge:200 };
+  const el = document.getElementById('li-vinyl-price-'+id);
+  if (el) el.value = '$' + (prices[tier] || 0).toFixed(2);
 }
 
 function setMachine(select, value) {
@@ -1097,7 +1121,8 @@ function calcMaterialCost(id) {
   } else if (type === 'vinyl') {
     const tier = document.getElementById(`li-tier-${id}`)?.value || 'small';
     matPerItem = PRICES.vinyl[tier] || 0;
-    descDetail = `vinyl · ${tier}`;
+    const tierLabel = { small:'Small (up to 0.3m)', medium:'Medium (0.3m–1m)', large:'Large (1m–2m)', xlarge:'Extra Large (2m–5m)' }[tier] || tier;
+    descDetail = `Vinyl · ${tierLabel}`;
   } else if (type === 'cardboard_single' || type === 'cardboard_double') {
     const pt = type === 'cardboard_single' ? PRICES.cardboard_single : PRICES.cardboard_double;
     const thick = document.getElementById(`li-thick-${id}`)?.value || '5';
@@ -1671,6 +1696,93 @@ function printDoc() {
 // ============================================================
 // SAVE & PRINT
 // ============================================================
+function collectFormState() {
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const state = {
+    type,
+    clientName:  document.getElementById('clientName').value,
+    jobTitle:    document.getElementById('jobTitle').value,
+    refNo:       document.getElementById('refNo').value,
+    date:        document.getElementById('quoteDate').value,
+    // Extras toggles & values
+    designOn:      document.getElementById('toggleDesign').checked,
+    designMode:    document.getElementById('designMode')?.value,
+    designValue:   document.getElementById('designValue')?.value,
+    expeditedOn:   document.getElementById('toggleExpedited').checked,
+    expeditedPct:  document.getElementById('expeditedPct')?.value,
+    helpersOn:     document.getElementById('toggleHelpers').checked,
+    helperCount:   document.getElementById('helperCount')?.value,
+    helperHours:   document.getElementById('helperHours')?.value,
+    staffOn:       document.getElementById('toggleStaff')?.checked,
+    staffRate:     document.getElementById('staffRate')?.value,
+    staffHours:    document.getElementById('staffHours')?.value,
+    staffCount:    document.getElementById('staffCount')?.value,
+    staffLeave:    document.getElementById('staffLeave')?.value,
+    projExpOn:     document.getElementById('toggleProjExp')?.checked,
+    projExpAmount: document.getElementById('projExpAmount')?.value,
+    projExpDesc:   document.getElementById('projExpDesc')?.value,
+    // Workshop
+    overallCoursePrice: document.getElementById('overallCoursePrice')?.value,
+    overallCoursePriceNote: document.getElementById('overallCoursePriceNote')?.value,
+    dateMode: typeof currentDateMode !== 'undefined' ? currentDateMode : 'continuous',
+    dateFrom: document.getElementById('dateFrom')?.value,
+    dateTo:   document.getElementById('dateTo')?.value,
+    lineItems: [],
+    accessories: [],
+    workshopItems: []
+  };
+
+  // Specific dates
+  const specDates = [];
+  document.querySelectorAll('[id^="spec-date-"]').forEach(inp => {
+    if (inp.value) specDates.push(inp.value);
+  });
+  state.specificDates = specDates;
+
+  // Line items
+  document.querySelectorAll('.line-item').forEach(li => {
+    const id = li.id.replace('li-','');
+    const matType = document.getElementById('li-type-'+id)?.value || '';
+    const item = {
+      desc:    document.getElementById('li-desc-'+id)?.value || '',
+      type:    matType,
+      hrs:     document.getElementById('li-hrs-'+id)?.value || '0',
+      qty:     document.getElementById('li-qty-'+id)?.value || '1',
+      machine: document.getElementById('li-machine-'+id)?.value || '',
+      size:    document.getElementById('li-size-'+id)?.value,
+      thick:   document.getElementById('li-thick-'+id)?.value,
+      tier:    document.getElementById('li-tier-'+id)?.value,
+      filament:document.getElementById('li-filament-'+id)?.value,
+      grams:   document.getElementById('li-grams-'+id)?.value,
+      gypsumShape: document.getElementById('li-gypsum-shape-'+id)?.value,
+      gypsumPrice: document.getElementById('li-gypsum-price-'+id)?.value,
+    };
+    state.lineItems.push(item);
+  });
+
+  // Accessories
+  document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
+    const id = el.id.replace('acc-desc-','');
+    state.accessories.push({
+      desc: el.value,
+      cost: document.getElementById('acc-cost-'+id)?.value || '0'
+    });
+  });
+
+  // Workshop items
+  document.querySelectorAll('.workshop-item').forEach(wi => {
+    const wid = wi.dataset.wid;
+    const wtype = wi.dataset.wtype;
+    state.workshopItems.push({
+      wtype,
+      customLabel: document.getElementById('wi-customlabel-'+wid)?.value || '',
+      detail: document.getElementById('wi-detail-'+wid)?.value || ''
+    });
+  });
+
+  return state;
+}
+
 function collectItems() {
   const items = [];
   const type = document.querySelector('input[name="quoteType"]:checked').value;
@@ -1738,6 +1850,7 @@ function saveAndPrint() {
     date: document.getElementById('quoteDate').value,
     total: d.grand || 0,
     items: collectItems(),
+    formState: collectFormState(),
     snapshot,
     saved: new Date().toISOString()
   };
@@ -1794,9 +1907,10 @@ function renderLog() {
         </div>
         <div class="log-item-total">$${e.total.toFixed(2)}</div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
-        <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;">⎙ View Quote</button>
-        <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;">📦 Delivery Order</button>
+      <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;min-width:100px;">⎙ View Quote</button>
+        <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;min-width:100px;">📦 Delivery Order</button>
+        <button class="btn btn-sm" onclick="duplicateEntry(${e.id})" style="flex:1;min-width:100px;background:#f0fdf4;border:1px solid #86efac;color:#15803d;font-weight:700;" title="Duplicate into Quote Builder">⧉ Duplicate</button>
         <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})" title="Delete this entry">🗑</button>
       </div>
     </div>`).join('');
@@ -1995,6 +2109,151 @@ function filterLog(type, el) {
 // ============================================================
 // RESET
 // ============================================================
+function restoreFormState(state) {
+  // Clear existing
+  document.getElementById('lineItems').innerHTML = '';
+  document.getElementById('accessories').innerHTML = '';
+  document.getElementById('workshopItems').innerHTML = '';
+  lineItemCount = 0; accessoryCount = 0; workshopItemCount = 0;
+
+  // Reset all workshop buttons
+  document.querySelectorAll('.wi-btn').forEach(b => b.classList.remove('used'));
+
+  // Quote type
+  const radio = document.querySelector('input[name="quoteType"][value="' + state.type + '"]');
+  if (radio) { radio.checked = true; updateQuoteType(); }
+
+  // Basic fields
+  document.getElementById('clientName').value = state.clientName || '';
+  document.getElementById('jobTitle').value   = state.jobTitle || '';
+  document.getElementById('refNo').value       = state.refNo || '';
+  document.getElementById('quoteDate').value   = state.date || '';
+
+  // Toggles & extras
+  function setToggle(id, val, fieldId) {
+    const el = document.getElementById(id);
+    if (el) { el.checked = !!val; if (fieldId) { const f = document.getElementById(fieldId); if(f) { if(val) f.classList.add('show'); else f.classList.remove('show'); } } }
+  }
+  setToggle('toggleDesign',    state.designOn,    'designFields');
+  if (state.designMode)  { const dm = document.getElementById('designMode');  if(dm) dm.value = state.designMode; }
+  if (state.designValue) { const dv = document.getElementById('designValue'); if(dv) dv.value = state.designValue; }
+
+  setToggle('toggleExpedited', state.expeditedOn,  'expeditedFields');
+  if (state.expeditedPct) { const ep = document.getElementById('expeditedPct'); if(ep) ep.value = state.expeditedPct; }
+
+  setToggle('toggleHelpers',   state.helpersOn,   'helperFields');
+  if (state.helperCount) { const hc = document.getElementById('helperCount'); if(hc) hc.value = state.helperCount; }
+  if (state.helperHours) { const hh = document.getElementById('helperHours'); if(hh) hh.value = state.helperHours; }
+
+  setToggle('toggleStaff',     state.staffOn,     'staffFields');
+  if (state.staffRate)   { const sr = document.getElementById('staffRate');   if(sr) sr.value = state.staffRate; }
+  if (state.staffHours)  { const sh = document.getElementById('staffHours');  if(sh) sh.value = state.staffHours; }
+  if (state.staffCount)  { const sc = document.getElementById('staffCount');  if(sc) sc.value = state.staffCount; }
+  if (state.staffLeave)  { const sl = document.getElementById('staffLeave');  if(sl) sl.value = state.staffLeave; }
+
+  setToggle('toggleProjExp',   state.projExpOn,   'projExpFields');
+  if (state.projExpAmount) { const pa = document.getElementById('projExpAmount'); if(pa) pa.value = state.projExpAmount; }
+  if (state.projExpDesc)   { const pd = document.getElementById('projExpDesc');   if(pd) pd.value = state.projExpDesc; }
+
+  // Workshop overall price & dates
+  if (document.getElementById('overallCoursePrice'))     document.getElementById('overallCoursePrice').value = state.overallCoursePrice || '';
+  if (document.getElementById('overallCoursePriceNote')) document.getElementById('overallCoursePriceNote').value = state.overallCoursePriceNote || '';
+
+  if (state.type === 'workshop') {
+    // Date mode
+    const mode = state.dateMode || 'continuous';
+    setDateMode(mode);
+    if (mode === 'continuous') {
+      if (state.dateFrom) document.getElementById('dateFrom').value = state.dateFrom;
+      if (state.dateTo)   document.getElementById('dateTo').value   = state.dateTo;
+    } else if (state.specificDates && state.specificDates.length) {
+      specificDateCount = 0;
+      document.getElementById('specificDatesList').innerHTML = '';
+      state.specificDates.forEach(d => {
+        addSpecificDate();
+        const inputs = document.querySelectorAll('[id^="spec-date-"]');
+        inputs[inputs.length-1].value = d;
+      });
+      updateSpecificDaysCount();
+    }
+    // Workshop items
+    (state.workshopItems || []).forEach(wi => {
+      addWorkshopItem(wi.wtype);
+      const wid = workshopItemCount;
+      if (wi.wtype === 'custom' && wi.customLabel) {
+        const cl = document.getElementById('wi-customlabel-'+wid);
+        if (cl) cl.value = wi.customLabel;
+      }
+      const det = document.getElementById('wi-detail-'+wid);
+      if (det && wi.detail) det.value = wi.detail;
+    });
+  } else {
+    // Line items
+    (state.lineItems || []).forEach(item => {
+      addLineItem();
+      const id = lineItemCount;
+      document.getElementById('li-desc-'+id).value = item.desc || '';
+      document.getElementById('li-qty-'+id).value  = item.qty  || '1';
+      document.getElementById('li-hrs-'+id).value  = item.hrs  || '0';
+      if (item.type) {
+        document.getElementById('li-type-'+id).value = item.type;
+        onMaterialChange(id);
+        // Restore sub-fields after onMaterialChange creates them
+        setTimeout(() => {
+          if (item.size)    { const s = document.getElementById('li-size-'+id);    if(s) s.value = item.size; }
+          if (item.thick)   { const t = document.getElementById('li-thick-'+id);   if(t) t.value = item.thick; }
+          if (item.tier)    { const r = document.getElementById('li-tier-'+id);    if(r) r.value = item.tier; }
+          if (item.filament){ const f = document.getElementById('li-filament-'+id); if(f) f.value = item.filament; }
+          if (item.grams)   { const g = document.getElementById('li-grams-'+id);   if(g) g.value = item.grams; }
+          if (item.gypsumShape) {
+            const gs = document.getElementById('li-gypsum-shape-'+id);
+            if(gs) { gs.value = item.gypsumShape; onGypsumShapeChange(id); }
+          }
+          if (item.gypsumPrice) { const gp = document.getElementById('li-gypsum-price-'+id); if(gp) gp.value = item.gypsumPrice; }
+          calcTotal();
+        }, 0);
+      }
+    });
+    // Accessories
+    (state.accessories || []).forEach(acc => {
+      addAccessory();
+      const id = accessoryCount;
+      const descEl = document.getElementById('acc-desc-'+id);
+      const costEl = document.getElementById('acc-cost-'+id);
+      if (descEl) descEl.value = acc.desc || '';
+      if (costEl) costEl.value = acc.cost || '0';
+    });
+  }
+
+  setTimeout(calcTotal, 50);
+}
+
+function duplicateEntry(id) {
+  try {
+    const raw = localStorage.getItem('quote:' + id);
+    if (!raw) { notify('Could not find quote.'); return; }
+    const entry = JSON.parse(raw);
+    if (!entry.formState) {
+      notify('This quote was saved before duplication was supported. Please re-save it first.');
+      return;
+    }
+    // Switch to builder tab
+    const builderTab = document.querySelector('.tab');
+    switchTab('builder', builderTab);
+    // Restore form state
+    restoreFormState(entry.formState);
+    // Generate a fresh ref number so it's clearly a new quote
+    const today = new Date();
+    document.getElementById('quoteDate').value = today.toISOString().split('T')[0];
+    const newRef = today.getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
+    document.getElementById('refNo').value = newRef;
+    notify('Quote duplicated — update the Ref No. and client details as needed.');
+  } catch(e) {
+    console.error('duplicateEntry error:', e);
+    notify('Could not duplicate quote.');
+  }
+}
+
 function resetForm() {
   if (!confirm('Reset all fields? Saved quotes in the log will be kept.')) return;
   document.getElementById('lineItems').innerHTML = '';
