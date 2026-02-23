@@ -347,6 +347,12 @@
     .form-row-4 { grid-template-columns: 1fr 1fr; }
   }
 
+  /* Log panel responsive */
+  @media (max-width: 900px) {
+    #panel-log > div { grid-template-columns: 1fr !important; }
+    #fySidebar { position:static; height:auto; border-left:none; border-top:2px solid var(--border); }
+  }
+
   /* Tablet (≤900px) — sidebar moves to bottom strip */
   @media (max-width: 900px) {
     .app { grid-template-columns: 1fr; }
@@ -442,7 +448,7 @@
   <div class="header-brand">
     <div class="header-title"><span>FabLab</span> Quotation Generator</div>
     <div class="header-divider"></div>
-    <div class="header-subtitle">SP · Department of Academy Quality & Resources</div>
+    <div class="header-subtitle">SP · Department of Academic Quality & Resources</div>
   </div>
   <div class="header-actions">
     <button class="btn btn-ghost btn-sm" onclick="resetForm()">↺ Reset</button>
@@ -455,6 +461,7 @@
 <div class="tabs">
   <button class="tab active" onclick="switchTab('builder', this)">📋 Quote Builder</button>
   <button class="tab" onclick="switchTab('log', this)">📁 Quote Log</button>
+  <button class="tab" onclick="switchTab('rates', this)">⚙️ Materials & Rates</button>
 </div>
 
 <!-- QUOTE BUILDER PANEL -->
@@ -766,21 +773,151 @@
 
 <!-- QUOTE LOG PANEL -->
 <div class="panel" id="panel-log">
-  <div style="padding: 22px 28px; max-width: 960px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div>
-        <div style="font-size:16px;font-weight:800;">Quote Log</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Saved quotations — click to restore</div>
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:0;min-height:calc(100vh - 96px);">
+
+    <!-- LEFT: Quote list -->
+    <div style="padding:22px 28px;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;">Quote Log</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Saved quotations</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="clearLog()">🗑 Clear All</button>
       </div>
-      <button class="btn btn-danger" onclick="clearLog()">🗑 Clear All</button>
+      <div class="log-filters">
+        <button class="filter-btn active" onclick="filterLog('all', this)">All</button>
+        <button class="filter-btn" onclick="filterLog('internal', this)">Internal</button>
+        <button class="filter-btn" onclick="filterLog('external', this)">External</button>
+        <button class="filter-btn" onclick="filterLog('workshop', this)">Workshop / Course</button>
+      </div>
+      <div id="logList"></div>
     </div>
-    <div class="log-filters">
-      <button class="filter-btn active" onclick="filterLog('all', this)">All</button>
-      <button class="filter-btn" onclick="filterLog('internal', this)">Internal</button>
-      <button class="filter-btn" onclick="filterLog('external', this)">External</button>
-      <button class="filter-btn" onclick="filterLog('workshop', this)">Workshop / Course</button>
+
+    <!-- RIGHT: FY Summary sidebar -->
+    <div id="fySidebar" style="background:var(--surface);border-left:1px solid var(--border);padding:20px;overflow-y:auto;position:sticky;top:96px;height:calc(100vh - 96px);">
+      <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
+        Financial Year Summary
+        <span id="fyLabel" style="font-size:11px;background:var(--accent-light);color:var(--accent);border-radius:4px;padding:2px 7px;font-weight:700;">FY26</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">Apr – Mar · all saved quotes</div>
+
+      <div id="fySummaryLines" style="margin-bottom:12px;"></div>
+
+      <div style="background:var(--accent);color:#fff;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;opacity:0.85;margin-bottom:4px;">FY TOTAL</div>
+        <div id="fyGrandTotal" style="font-size:22px;font-weight:800;">$0.00</div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">By Category</div>
+      <div id="fyCategoryLines"></div>
+
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Change Financial Year</div>
+        <select id="fySelect" onchange="renderLog()" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:12px;">
+          <option value="26">FY26 (Apr 2025 – Mar 2026)</option>
+          <option value="27">FY27 (Apr 2026 – Mar 2027)</option>
+          <option value="25">FY25 (Apr 2024 – Mar 2025)</option>
+          <option value="24">FY24 (Apr 2023 – Mar 2024)</option>
+        </select>
+      </div>
     </div>
-    <div id="logList"></div>
+
+  </div>
+</div>
+
+<!-- EDIT QUOTE MODAL -->
+<div class="modal-overlay" id="editModal" onclick="closeEditOnBg(event)" style="z-index:1100;">
+  <div class="modal-box" style="max-width:480px;padding:24px;">
+    <div style="font-size:15px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+      Edit Quote Details
+      <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Client Name</label>
+      <input type="text" id="editClientName" style="width:100%;">
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Job Title</label>
+      <input type="text" id="editJobTitle" style="width:100%;">
+    </div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Ref No.</label>
+        <input type="text" id="editRefNo">
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="editDate">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="saveEditModal()">💾 Save Changes</button>
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MATERIALS & RATES PANEL -->
+<div class="panel" id="panel-rates">
+  <div style="padding:22px 28px;max-width:1100px;">
+    <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Materials & Rates</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">Edit prices and machine rates — changes apply immediately to new quotes.</div>
+
+    <!-- MACHINES -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">⚙️</span> Machine Hourly Rates</div>
+      <div id="machineRatesTable" style="margin-top:8px;"></div>
+      <button class="add-item-btn" onclick="addMachineRate()" style="margin-top:10px;">+ Add Machine</button>
+    </div>
+
+    <!-- ACRYLIC -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🔷</span> Acrylic Prices ($ per sheet)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Size, Columns = Thickness (3mm / 5mm / 10mm)</div>
+      <div id="acrylicTable" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- PLYWOOD -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🟫</span> Plywood Prices ($ per sheet)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Size, Columns = Thickness (3mm / 5mm)</div>
+      <div id="plywoodTable" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- VINYL -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🎨</span> Vinyl Flat Rates ($ per piece)</div>
+      <div id="vinylTable" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- CARDBOARD -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">📦</span> Cardboard Single Wall ($ per sheet)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Thickness, Columns = Size (A0/A1/A2/A3)</div>
+      <div id="cardboardSingleTable" style="overflow-x:auto;"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">📦</span> Cardboard Double Wall ($ per sheet)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Thickness, Columns = Size (A0/A1/A2/A3)</div>
+      <div id="cardboardDoubleTable" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- 3D PRINT -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🖨️</span> 3D Print Rate</div>
+      <div id="printRateTable" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- GYPSUM -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🏺</span> Gypsum Powder Prices</div>
+      <div id="gypsumTable" style="margin-top:8px;"></div>
+    </div>
+
+    <div style="margin-top:8px;padding:12px 16px;background:#fef9c3;border:1px solid #fbbf24;border-radius:8px;font-size:12px;color:#92400e;">
+      ⚠️ Changes are saved in this browser session only. To make permanent changes, the HTML file must be updated by your administrator.
+    </div>
   </div>
 </div>
 
@@ -840,6 +977,7 @@ function switchTab(tab, el) {
   el.classList.add('active');
   document.getElementById('panel-' + tab).classList.add('active');
   if (tab === 'log') renderLog();
+  if (tab === 'rates') renderRatesPanel();
 }
 
 // ============================================================
@@ -1558,7 +1696,7 @@ function buildQuoteDoc() {
     + '<div class="qdoc-header">'
     +   '<div class="qdoc-logo-block">'
     +     '<div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1;"><span style="color:#c0392b;">SP</span> FabLab</div>'
-    +     '<div class="qdoc-address">Department of Academy Quality &amp; Resources<br>Fablab<br>500 Dover Road, S13651</div>'
+    +     '<div class="qdoc-address">Department of Academic Quality &amp; Resources<br>Fablab<br>500 Dover Road, S139651</div>'
     +   '</div>'
     +   '<div class="qdoc-title-block">'
     +     '<div class="qdoc-doc-title">' + docTitle + '</div>'
@@ -1590,7 +1728,7 @@ function buildQuoteDoc() {
     + '<div class="qdoc-footer">'
     +   'This quotation is valid for 30 days from the date of issue. All amounts in Singapore Dollars (SGD).<br>'
     +   footerNote + '<br>'
-    +   'SP FabLab · Department of Academy Quality &amp; Resources · 500 Dover Road, S13651'
+    +   'SP FabLab · Department of Academic Quality &amp; Resources · 500 Dover Road, S139651'
     + '</div>'
     + '</div>';
 }
@@ -1600,7 +1738,13 @@ function buildQuoteDoc() {
 // ============================================================
 function showPreview() {
   document.getElementById('quoteDocContent').innerHTML = buildQuoteDoc();
-  document.getElementById('previewModal').classList.add('show');
+  const _modal = document.getElementById('previewModal');
+  const _type  = document.querySelector('input[name="quoteType"]:checked')?.value || 'internal';
+  const _raw   = document.getElementById('refNo').value || '';
+  const _ref   = _type === 'workshop' ? _raw : ('SP-TTC/' + _raw);
+  const _cli   = document.getElementById('clientName').value || 'Unknown';
+  _modal.dataset.printTitle = makeFilename('', _ref, _cli);
+  _modal.classList.add('show');
 }
 function closePreview() { document.getElementById('previewModal').classList.remove('show'); }
 function closePreviewOnBg(e) { if (e.target.id === 'previewModal') closePreview(); }
@@ -1686,10 +1830,9 @@ function printWithTitle(content, title, isFullDoc) {
 
 function printDoc() {
   const content = document.getElementById('quoteDocContent').innerHTML;
-  const rawRef = document.getElementById('refNo').value || '';
-  const refNo = type === 'workshop' ? rawRef : ('SP-TTC/' + rawRef);
-  const client = document.getElementById('clientName').value || 'Unknown';
-  const title = makeFilename('', refNo, client);
+  // Try to get title from data attr set when preview was opened
+  const modal = document.getElementById('previewModal');
+  const title = modal.dataset.printTitle || 'SP-FabLab-Quote';
   printWithTitle(content, title, false);
 }
 
@@ -1894,6 +2037,7 @@ function renderLog() {
       <div style="font-weight:700;">No ${currentLogFilter === 'all' ? '' : currentLogFilter + ' '}quotes saved yet.</div>
       <div style="margin-top:4px;">Build a quote and click "Save & Print" to log it here.</div>
     </div>`;
+    renderFYSummary(entries);
     return;
   }
 
@@ -1902,18 +2046,22 @@ function renderLog() {
       <div class="log-item-header">
         <div>
           <div class="log-item-title">${e.client} — ${e.jobTitle}</div>
-          <div class="log-item-meta">${e.refNo} · ${formatDate(e.date)} · <span class="badge badge-${e.type}">${e.type}</span></div>
+          <div class="log-item-meta">${e.refNo} · ${formatDate(e.date)} · <span class="badge badge-${e.type}">${e.type === 'workshop' ? 'Workshop' : e.type.charAt(0).toUpperCase()+e.type.slice(1)}</span></div>
           <div class="log-item-meta" style="margin-top:2px;">Saved: ${new Date(e.saved).toLocaleString()}</div>
         </div>
         <div class="log-item-total">$${e.total.toFixed(2)}</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;min-width:100px;">⎙ View Quote</button>
-        <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;min-width:100px;">📦 Delivery Order</button>
-        <button class="btn btn-sm" onclick="duplicateEntry(${e.id})" style="flex:1;min-width:100px;background:#f0fdf4;border:1px solid #86efac;color:#15803d;font-weight:700;" title="Duplicate into Quote Builder">⧉ Duplicate</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})" title="Delete this entry">🗑</button>
+        <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;min-width:90px;">⎙ View</button>
+        <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;min-width:90px;">📦 DO</button>
+        <button class="btn btn-sm" onclick="duplicateEntry(${e.id})" style="flex:1;min-width:90px;background:#f0fdf4;border:1px solid #86efac;color:#15803d;font-weight:700;">⧉ Duplicate</button>
+        <button class="btn btn-sm" onclick="openEditModal(${e.id})" style="flex:1;min-width:90px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-weight:700;">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})" title="Delete">🗑</button>
       </div>
     </div>`).join('');
+
+  // Always render FY summary with ALL entries (not filtered)
+  renderFYSummary(entries);
 }
 
 function restoreAndPreview(id) {
@@ -1922,7 +2070,10 @@ function restoreAndPreview(id) {
     if (!raw) return;
     const entry = JSON.parse(raw);
     document.getElementById('quoteDocContent').innerHTML = entry.snapshot;
-    document.getElementById('previewModal').classList.add('show');
+    const modal = document.getElementById('previewModal');
+    const ref   = entry.refNo || '';
+    modal.dataset.printTitle = makeFilename('', ref, entry.client || 'Unknown');
+    modal.classList.add('show');
   } catch(e) { notify('Could not load quote.'); }
 }
 
@@ -2014,7 +2165,7 @@ function generateDO(id) {
       '<div class="hdr">',
       '  <div>',
       '    <div class="brand"><span>SP</span> FabLab</div>',
-      '    <div class="addr">Department of Academy Quality &amp; Resources<br>Fablab &middot; 500 Dover Road, S13651</div>',
+      '    <div class="addr">Department of Academic Quality &amp; Resources<br>Fablab &middot; 500 Dover Road, S139651</div>',
       '  </div>',
       '  <div>',
       '    <div class="doc-title">Delivery Order</div>',
@@ -2051,7 +2202,7 @@ function generateDO(id) {
       '  </div>',
       '</div>',
       '<div class="footer">',
-      '  SP FabLab &middot; Department of Academy Quality &amp; Resources &middot; 500 Dover Road, S13651<br>',
+      '  SP FabLab &middot; Department of Academic Quality &amp; Resources &middot; 500 Dover Road, S139651<br>',
       '  DO No: ' + doNum + ' &middot; Quote Ref: ' + entry.refNo + ' &middot; Printed: ' + doDate,
       '</div>',
       '<scr' + 'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print();},800);});</scr' + 'ipt>',
@@ -2283,6 +2434,269 @@ function notify(msg) {
   n.classList.add('show');
   setTimeout(() => n.classList.remove('show'), 2500);
 }
+
+// ============================================================
+// RATES PANEL — render editable tables
+// ============================================================
+function renderRatesPanel() {
+  // Machine rates
+  const mr = document.getElementById('machineRatesTable');
+  if (mr) {
+    mr.innerHTML = Object.entries(MACHINE_RATES).map(([k,v]) => `
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
+        <input type="text" value="${MACHINE_LABELS[k]?.split(' (')[0] || k}" id="ml-${k}" style="font-weight:700;" placeholder="Machine name">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:#6b7280;">$/hr</span>
+          <input type="number" value="${v}" id="mr-${k}" min="0" step="0.5" oninput="updateMachineRate('${k}')" style="width:100%;">
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="deleteMachineRate('${k}')">✕</button>
+      </div>`).join('');
+  }
+
+  // Acrylic grid
+  renderGridTable('acrylicTable', 'acrylic',
+    ['A7','A6','A5','A4','A3','A2'], [3,5,10], 'Size', 'Thickness (mm)');
+
+  // Plywood grid
+  renderGridTable('plywoodTable', 'plywood',
+    ['A7','A6','A5','A4','A3','A2'], [3,5], 'Size', 'Thickness (mm)');
+
+  // Vinyl
+  const vt = document.getElementById('vinylTable');
+  if (vt) {
+    vt.innerHTML = Object.entries(PRICES.vinyl).map(([tier,price]) => `
+      <div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
+        <div style="font-size:12px;font-weight:700;">${{small:'Small (up to 0.3m)',medium:'Medium (0.3–1m)',large:'Large (1–2m)',xlarge:'Extra Large (2–5m)'}[tier]}</div>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#6b7280;">$</span>
+        <input type="number" value="${price}" id="vinyl-${tier}" min="0" step="1" oninput="PRICES.vinyl['${tier}']=parseFloat(this.value)||0;updateVinylDisplays();" style="width:100%;"></div>
+      </div>`).join('');
+  }
+
+  // Cardboard
+  renderCardboardTable('cardboardSingleTable', 'cardboard_single');
+  renderCardboardTable('cardboardDoubleTable', 'cardboard_double');
+
+  // 3D print rate
+  const pt = document.getElementById('printRateTable');
+  if (pt) {
+    const rate = PRICES._3dprint_rate || 25;
+    pt.innerHTML = `<div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
+      <div style="font-size:12px;font-weight:700;">PLA / PETG rate ($ per kg)</div>
+      <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#6b7280;">$</span>
+      <input type="number" value="${rate}" id="printRate" min="0" step="1" oninput="PRICES._3dprint_rate=parseFloat(this.value)||25;" style="width:100%;"></div>
+    </div>`;
+  }
+
+  // Gypsum
+  const gt = document.getElementById('gypsumTable');
+  if (gt) {
+    gt.innerHTML = Object.entries(PRICES.gypsum).map(([shape,price]) => `
+      <div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
+        <div style="font-size:12px;font-weight:700;">${shape.charAt(0).toUpperCase()+shape.slice(1).replace('_',' ')}</div>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#6b7280;">$</span>
+        <input type="number" value="${price||''}" id="gypsum-${shape}" min="0" step="0.5" placeholder="custom"
+          oninput="PRICES.gypsum['${shape}']=parseFloat(this.value)||null;" style="width:100%;"></div>
+      </div>`).join('');
+  }
+}
+
+function renderGridTable(containerId, priceKey, rows, cols, rowLabel, colLabel) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  let html = `<table style="border-collapse:collapse;min-width:400px;">
+    <thead><tr><th style="padding:6px 10px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;text-align:left;">${rowLabel} \ ${colLabel}</th>`;
+  cols.forEach(c => html += `<th style="padding:6px 10px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${c}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach(row => {
+    html += `<tr><td style="padding:6px 10px;background:#f9fafb;border:1px solid #e5e7eb;font-weight:700;font-size:12px;">${row}</td>`;
+    cols.forEach(col => {
+      const val = PRICES[priceKey]?.[row]?.[col] ?? '';
+      html += `<td style="padding:4px 6px;border:1px solid #e5e7eb;">
+        <input type="number" value="${val}" min="0" step="0.5" style="width:70px;text-align:right;"
+          oninput="if(!PRICES['${priceKey}']) PRICES['${priceKey}']={};
+                   if(!PRICES['${priceKey}']['${row}']) PRICES['${priceKey}']['${row}']={};
+                   PRICES['${priceKey}']['${row}'][${typeof col==='number'?col:`'${col}'`}]=parseFloat(this.value)||0;">
+      </td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderCardboardTable(containerId, priceKey) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const thicknesses = ['5','10','15'];
+  const sizes = ['A0','A1','A2','A3'];
+  let html = `<table style="border-collapse:collapse;">
+    <thead><tr><th style="padding:6px 10px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;">Thickness \ Size</th>`;
+  sizes.forEach(s => html += `<th style="padding:6px 10px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${s}</th>`);
+  html += '</tr></thead><tbody>';
+  thicknesses.forEach(t => {
+    html += `<tr><td style="padding:6px 10px;background:#f9fafb;border:1px solid #e5e7eb;font-weight:700;font-size:12px;">${t}mm</td>`;
+    sizes.forEach(s => {
+      const val = PRICES[priceKey]?.[t]?.[s] ?? '';
+      html += `<td style="padding:4px 6px;border:1px solid #e5e7eb;">
+        <input type="number" value="${val}" min="0" step="0.5" style="width:70px;text-align:right;"
+          oninput="if(!PRICES['${priceKey}']['${t}']) PRICES['${priceKey}']['${t}']={};
+                   PRICES['${priceKey}']['${t}']['${s}']=parseFloat(this.value)||0;">
+      </td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function updateMachineRate(key) {
+  const v = parseFloat(document.getElementById('mr-'+key)?.value) || 0;
+  MACHINE_RATES[key] = v;
+  // Update label display
+  const label = document.getElementById('ml-'+key)?.value || key;
+  const shortLabel = label.replace(/\s*\(.*\)$/, '');
+  MACHINE_LABELS[key] = shortLabel + ' ($' + v + '/hr)';
+}
+
+function deleteMachineRate(key) {
+  if (!confirm('Remove machine "' + (MACHINE_LABELS[key] || key) + '"?')) return;
+  delete MACHINE_RATES[key];
+  delete MACHINE_LABELS[key];
+  renderRatesPanel();
+}
+
+function addMachineRate() {
+  const name = prompt('Machine name (e.g. Vinyl Cutter):');
+  if (!name) return;
+  const rate = parseFloat(prompt('Hourly rate ($):') || '0');
+  const key = name.toLowerCase().replace(/\s+/g,'_');
+  MACHINE_RATES[key] = rate;
+  MACHINE_LABELS[key] = name + ' ($' + rate + '/hr)';
+  renderRatesPanel();
+  notify('Machine added: ' + name);
+}
+
+function updateVinylDisplays() {
+  // Update any open vinyl price displays
+  document.querySelectorAll('[id^="li-vinyl-price-"]').forEach(el => {
+    const id = el.id.replace('li-vinyl-price-','');
+    updateVinylPrice(parseInt(id));
+  });
+}
+
+// ============================================================
+// EDIT LOG ENTRY MODAL
+// ============================================================
+let currentEditId = null;
+
+function openEditModal(id) {
+  try {
+    const raw = localStorage.getItem('quote:' + id);
+    if (!raw) return;
+    const entry = JSON.parse(raw);
+    currentEditId = id;
+    // Strip SP-TTC/ prefix for display (it's stored in refNo with prefix)
+    document.getElementById('editClientName').value = entry.client || '';
+    document.getElementById('editJobTitle').value = entry.jobTitle || '';
+    document.getElementById('editRefNo').value = entry.refNo || '';
+    document.getElementById('editDate').value = entry.date || '';
+    document.getElementById('editModal').classList.add('show');
+  } catch(e) { notify('Could not open entry.'); }
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('show');
+  currentEditId = null;
+}
+
+function closeEditOnBg(e) {
+  if (e.target.id === 'editModal') closeEditModal();
+}
+
+function saveEditModal() {
+  if (!currentEditId) return;
+  try {
+    const raw = localStorage.getItem('quote:' + currentEditId);
+    if (!raw) return;
+    const entry = JSON.parse(raw);
+    entry.client   = document.getElementById('editClientName').value;
+    entry.jobTitle = document.getElementById('editJobTitle').value;
+    entry.refNo    = document.getElementById('editRefNo').value;
+    entry.date     = document.getElementById('editDate').value;
+    // Update formState too
+    if (entry.formState) {
+      entry.formState.clientName = entry.client;
+      entry.formState.jobTitle   = entry.jobTitle;
+      entry.formState.refNo      = entry.refNo.replace(/^SP-TTC\//,'');
+      entry.formState.date       = entry.date;
+    }
+    localStorage.setItem('quote:' + currentEditId, JSON.stringify(entry));
+    closeEditModal();
+    renderLog();
+    notify('Quote updated ✓');
+  } catch(e) { notify('Could not save changes.'); }
+}
+
+// ============================================================
+// FY SUMMARY SIDEBAR
+// ============================================================
+function getFYBounds(fy) {
+  // FY26 = Apr 2025 – Mar 2026
+  const startYear = 2000 + parseInt(fy) - 1;
+  const start = new Date(startYear, 3, 1);   // Apr 1
+  const end   = new Date(startYear + 1, 2, 31, 23, 59, 59); // Mar 31
+  return { start, end };
+}
+
+function renderFYSummary(entries) {
+  const fy = document.getElementById('fySelect')?.value || '26';
+  const { start, end } = getFYBounds(fy);
+  const label = 'FY' + fy;
+  const fyEl = document.getElementById('fyLabel');
+  if (fyEl) fyEl.textContent = label;
+
+  // Filter entries within FY (use quote date, not saved date)
+  const fyEntries = entries.filter(e => {
+    const d = new Date(e.date);
+    return d >= start && d <= end;
+  });
+
+  const totals = { internal:0, external:0, workshop:0 };
+  let grand = 0;
+  fyEntries.forEach(e => {
+    totals[e.type] = (totals[e.type] || 0) + (e.total || 0);
+    grand += (e.total || 0);
+  });
+
+  const summaryLines = document.getElementById('fySummaryLines');
+  if (summaryLines) {
+    summaryLines.innerHTML = [
+      ['Quotes in period', fyEntries.length + ' quotes'],
+    ].map(([l,v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <span style="color:var(--text-muted);">${l}</span><span style="font-weight:700;">${v}</span></div>`).join('');
+  }
+
+  const grandEl = document.getElementById('fyGrandTotal');
+  if (grandEl) grandEl.textContent = '$' + grand.toFixed(2);
+
+  const catLines = document.getElementById('fyCategoryLines');
+  if (catLines) {
+    const cats = [
+      { key:'internal',  label:'Internal',          color:'#1d4ed8', bg:'#eff6ff' },
+      { key:'external',  label:'External',           color:'#b45309', bg:'#fffbeb' },
+      { key:'workshop',  label:'Workshop / Course',  color:'#15803d', bg:'#f0fdf4' },
+    ];
+    catLines.innerHTML = cats.map(c => `
+      <div style="background:${c.bg};border-radius:8px;padding:12px 14px;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;color:${c.color};margin-bottom:4px;">${c.label}</div>
+        <div style="font-size:18px;font-weight:800;color:${c.color};">$${(totals[c.key]||0).toFixed(2)}</div>
+        <div style="font-size:10px;color:${c.color};opacity:0.7;margin-top:2px;">
+          ${fyEntries.filter(e=>e.type===c.key).length} quote${fyEntries.filter(e=>e.type===c.key).length!==1?'s':''}
+        </div>
+      </div>`).join('');
+  }
+}
+
 </script>
 </body>
 </html>
