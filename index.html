@@ -322,6 +322,29 @@
 </head>
 <body>
 
+<script>
+// Block local file access
+if (window.location.protocol === 'file:') {
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.innerHTML = '';
+    document.body.style.cssText = 'margin:0;padding:0;background:#f4f5f7;font-family:"Segoe UI",Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;';
+    document.body.innerHTML = `
+      <div style="text-align:center;max-width:480px;padding:40px 32px;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.10);border:1px solid #e5e7eb;">
+        <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+        <div style="font-size:20px;font-weight:800;color:#1a1d23;margin-bottom:8px;">Hosted Access Required</div>
+        <div style="font-size:13px;color:#6b7280;line-height:1.7;margin-bottom:20px;">
+          This tool cannot be run from a local file.<br>
+          Please access it via the hosted URL on<br>
+          <strong>GitHub Pages</strong> or your organisation's server.
+        </div>
+        <div style="background:#f0f4ff;border:1px solid #c7d7fd;border-radius:8px;padding:14px 18px;font-size:12px;color:#1d4ed8;font-weight:600;">
+          Contact your FabLab administrator for the correct link.
+        </div>
+      </div>`;
+  });
+}
+</script>
+
 <!-- HEADER -->
 <div class="header">
   <div class="header-brand">
