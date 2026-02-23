@@ -241,6 +241,25 @@
   .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
   .badge-internal { background: #dbeafe; color: #1d4ed8; }
   .badge-external { background: #fef3c7; color: #b45309; }
+  .badge-workshop { background: #dcfce7; color: #15803d; }
+  .workshop-green { --accent: #15803d; --accent-dark: #166534; --accent-light: #f0fdf4; }
+  #workshopSection .section-title { color: #15803d; }
+  #workshopSection .add-item-btn { border-color: #86efac; color: #15803d; }
+  #workshopSection .add-item-btn:hover { background: #dcfce7; border-color: #4ade80; }
+  .wi-row { display:grid; grid-template-columns: 160px 1fr auto; gap:8px; align-items:center; margin-bottom:8px; padding:8px 10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; }
+  .wi-btn.used { opacity:0.4; pointer-events:none; cursor:not-allowed; background:#e5e7eb; border-color:#d1d5db; color:#9ca3af; }
+  .sidebar.workshop-mode { --accent: #15803d; --accent-dark: #166534; --accent-light: #f0fdf4; }
+  .sidebar.workshop-mode .sidebar-title { color: #15803d; }
+  .sidebar.workshop-mode .summary-total { background: #dcfce7; border-color: #86efac; }
+  .sidebar.workshop-mode .summary-total .val { color: #15803d; }
+  .sidebar.workshop-mode .summary-line .val { color: #15803d; }
+  .sidebar.workshop-mode .btn-primary { background: #15803d; border-color: #15803d; }
+  .sidebar.workshop-mode .btn-primary:hover { background: #166534; }
+  .sidebar.workshop-mode .btn-secondary { border-color: #15803d; color: #15803d; }
+  .wi-label { font-size:12px; font-weight:700; color:#15803d; }
+  .date-mode-btn { padding:6px 14px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.15s; }
+  .date-mode-btn.active { background:#15803d; color:#fff; border-color:#15803d; }
+  .specific-date-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
   .tax-note { font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
   .fine-print { font-size: 10px; color: var(--text-light); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.5; }
 
@@ -362,7 +381,7 @@
           <div class="form-group">
             <label>Project Ref No.</label>
             <div style="display:flex;gap:6px;align-items:center;">
-              <span style="font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;padding:8px 0;">SP-TTC/</span>
+              <span id="refPrefix" style="font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;padding:8px 0;">SP-TTC/</span>
               <input type="text" id="refNo" placeholder="2024-001" oninput="calcTotal()">
             </div>
           </div>
@@ -375,6 +394,7 @@
             <div class="radio-group">
               <label class="radio-label"><input type="radio" name="quoteType" value="internal" onchange="updateQuoteType()" checked> Internal</label>
               <label class="radio-label"><input type="radio" name="quoteType" value="external" onchange="updateQuoteType()"> External</label>
+              <label class="radio-label"><input type="radio" name="quoteType" value="workshop" onchange="updateQuoteType()"> External Workshop / Course</label>
             </div>
           </div>
         </div>
@@ -392,6 +412,74 @@
         <div class="section-title"><span class="section-title-icon">🔧</span> Accessories & Consumables</div>
         <div id="accessories"></div>
         <button class="add-item-btn" onclick="addAccessory()" style="margin-top:6px;">+ Add Accessory</button>
+      </div>
+
+      <!-- WORKSHOP COURSE ITEMS — workshop only -->
+      <div class="section" id="workshopSection" style="display:none;">
+        <div class="section-title"><span class="section-title-icon">🎓</span> Course / Workshop Details</div>
+
+        <!-- DATE BLOCK -->
+        <div style="margin-bottom:16px;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
+          <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">📅 Workshop Dates</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button class="date-mode-btn active" id="dateModeContBtn" onclick="setDateMode('continuous')">Continuous (Date Range)</button>
+            <button class="date-mode-btn" id="dateModeSpecBtn" onclick="setDateMode('specific')">Specific Dates</button>
+          </div>
+
+          <!-- Continuous date range -->
+          <div id="dateContinuousBlock">
+            <div class="form-row">
+              <div class="form-group">
+                <label>From</label>
+                <input type="date" id="dateFrom" onchange="calcTotal()">
+              </div>
+              <div class="form-group">
+                <label>To</label>
+                <input type="date" id="dateTo" onchange="calcTotal()">
+              </div>
+              <div class="form-group">
+                <label>Duration</label>
+                <input type="text" id="dateDurationDisplay" readonly placeholder="Auto-calculated">
+              </div>
+            </div>
+          </div>
+
+          <!-- Specific dates -->
+          <div id="dateSpecificBlock" style="display:none;">
+            <div id="specificDatesList"></div>
+            <button class="add-item-btn" onclick="addSpecificDate()" style="border-color:#86efac;color:#15803d;margin-top:4px;">+ Add Date</button>
+            <div style="margin-top:8px;font-size:12px;color:#15803d;font-weight:600;" id="specificDaysCount"></div>
+          </div>
+        </div>
+
+        <!-- COURSE ITEMS -->
+        <div id="workshopItems" style="margin-bottom:8px;"></div>
+
+        <!-- Course add buttons -->
+        <div style="margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;" id="workshopBtnGroup">
+          <button class="add-item-btn wi-btn" id="wi-btn-3dcad" onclick="addWorkshopItem('3dcad')" style="flex:1;min-width:140px;">+ 3D CAD</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-3dprint" onclick="addWorkshopItem('3dprint')" style="flex:1;min-width:140px;">+ 3D Printing</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-lasercut" onclick="addWorkshopItem('lasercut')" style="flex:1;min-width:140px;">+ Laser Cut</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-programming" onclick="addWorkshopItem('programming')" style="flex:1;min-width:140px;">+ Programming</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-cardboard" onclick="addWorkshopItem('cardboard')" style="flex:1;min-width:140px;">+ Cardboard Sculpt</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-equipment" onclick="addWorkshopItem('equipment')" style="flex:1;min-width:140px;">+ FabLab Equipment Usage</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-custom" onclick="addWorkshopItem('custom')" style="flex:1;min-width:140px;">+ Custom Item</button>
+        </div>
+
+        <!-- Overall Course Price -->
+        <div style="margin-top:16px;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
+          <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">💰 Overall Course Price</div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label>Total Course Fee ($)</label>
+              <input type="number" id="overallCoursePrice" value="" min="0" step="0.01" placeholder="Enter total course fee" oninput="calcTotal()">
+            </div>
+            <div class="form-group" style="flex:2;">
+              <label>Notes (optional)</label>
+              <input type="text" id="overallCoursePriceNote" placeholder="e.g. Inclusive of all materials and instruction" oninput="calcTotal()">
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- EXTRAS -->
@@ -475,6 +563,74 @@
           </div>
         </div>
 
+
+        <!-- STAFF CHARGES — external/workshop only -->
+        <div id="staffChargesWrap" style="display:none;">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Staff Charges</div>
+              <div class="toggle-desc">Staff rate × hours × number of staff</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="toggleStaff" onchange="toggleSection('staffFields')"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="conditional" id="staffFields">
+            <div class="conditional-inner">
+              <div class="form-row form-row-4">
+                <div class="form-group">
+                  <label>Rate ($/hr)</label>
+                  <input type="number" id="staffRate" value="0" min="0" step="0.01" oninput="calcTotal()">
+                </div>
+                <div class="form-group">
+                  <label>Hours</label>
+                  <input type="number" id="staffHours" value="0" min="0" step="0.5" oninput="calcTotal()">
+                </div>
+                <div class="form-group">
+                  <label>No. of Staff</label>
+                  <input type="number" id="staffCount" value="1" min="1" oninput="calcTotal()">
+                </div>
+                <div class="form-group">
+                  <label>Leave Taken</label>
+                  <select id="staffLeave" onchange="calcTotal()">
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Staff Charges Total</label>
+                  <input type="text" id="staffCostDisplay" readonly>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROJECT EXPENSES — external/workshop only -->
+        <div id="projExpWrap" style="display:none;">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Project Expenses</div>
+              <div class="toggle-desc">Miscellaneous project costs</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="toggleProjExp" onchange="toggleSection('projExpFields')"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="conditional" id="projExpFields">
+            <div class="conditional-inner">
+              <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                  <label>Project Expenses ($)</label>
+                  <input type="number" id="projExpAmount" value="0" min="0" step="0.01" oninput="calcTotal()">
+                </div>
+                <div class="form-group" style="flex:2;">
+                  <label>Description</label>
+                  <input type="text" id="projExpDesc" placeholder="e.g. Materials, transport, printing" oninput="calcTotal()">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -520,6 +676,7 @@
       <button class="filter-btn active" onclick="filterLog('all', this)">All</button>
       <button class="filter-btn" onclick="filterLog('internal', this)">Internal</button>
       <button class="filter-btn" onclick="filterLog('external', this)">External</button>
+      <button class="filter-btn" onclick="filterLog('workshop', this)">Workshop / Course</button>
     </div>
     <div id="logList"></div>
   </div>
@@ -761,7 +918,7 @@ function removeAcc(id) {
 // ============================================================
 function toggleSection(fieldId) {
   const el = document.getElementById(fieldId);
-  const checkId = { designFields:'toggleDesign', helperFields:'toggleHelpers', expeditedFields:'toggleExpedited' }[fieldId];
+  const checkId = { designFields:'toggleDesign', helperFields:'toggleHelpers', expeditedFields:'toggleExpedited', staffFields:'toggleStaff', projExpFields:'toggleProjExp' }[fieldId];
   const checked = document.getElementById(checkId)?.checked;
   if (checked) el.classList.add('show'); else el.classList.remove('show');
   calcTotal();
@@ -769,12 +926,50 @@ function toggleSection(fieldId) {
 
 function updateQuoteType() {
   const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const isInternal = type === 'internal';
+  const isWorkshop = type === 'workshop';
+  const isExternal = type === 'external';
+
+  // Badge
   const badge = document.getElementById('quoteBadge');
-  badge.className = `badge badge-${type}`;
-  badge.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-  document.getElementById('taxNote').textContent = type === 'internal'
+  badge.className = 'badge badge-' + (isWorkshop ? 'workshop' : type);
+  badge.textContent = isWorkshop ? 'Workshop / Course' : (type.charAt(0).toUpperCase() + type.slice(1));
+
+  // Sidebar green for workshop
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) {
+    if (isWorkshop) sidebar.classList.add('workshop-mode');
+    else sidebar.classList.remove('workshop-mode');
+  }
+
+  // Tax note
+  document.getElementById('taxNote').textContent = isInternal
     ? 'Internal: No SP Surcharge or GST applied.'
-    : 'External: +30% SP Surcharge + 9% GST applied.';
+    : 'External: SP Charge Rate (18.5%) applied.';
+
+  // Ref prefix — hide SP-TTC/ for workshop
+  const refPrefix = document.getElementById('refPrefix');
+  if (refPrefix) refPrefix.style.display = isWorkshop ? 'none' : '';
+
+  // Show/hide external-only extras
+  document.getElementById('staffChargesWrap').style.display = isInternal ? 'none' : '';
+  document.getElementById('projExpWrap').style.display = isInternal ? 'none' : '';
+
+  // Show/hide workshop vs standard sections
+  document.getElementById('lineItems').closest('.section').style.display = isWorkshop ? 'none' : '';
+  document.getElementById('accessories').closest('.section').style.display = isWorkshop ? 'none' : '';
+  document.getElementById('workshopSection').style.display = isWorkshop ? '' : 'none';
+
+  // Show/hide Design Fee + Expedited for workshop
+  const designRow = document.getElementById('toggleDesign')?.closest('.toggle-row');
+  const expeditedRow = document.getElementById('toggleExpedited')?.closest('.toggle-row');
+  const designFields = document.getElementById('designFields');
+  const expeditedFields = document.getElementById('expeditedFields');
+  if (designRow) designRow.style.display = isWorkshop ? 'none' : '';
+  if (expeditedRow) expeditedRow.style.display = isWorkshop ? 'none' : '';
+  if (designFields) designFields.style.display = isWorkshop ? 'none' : '';
+  if (expeditedFields) expeditedFields.style.display = isWorkshop ? 'none' : '';
+
   calcTotal();
 }
 
@@ -854,6 +1049,33 @@ function calcTotal() {
   }
   subtotal += helperCost;
 
+  // Workshop — use overall course price
+  let workshopTotal = 0;
+  const overallPrice = parseFloat(document.getElementById('overallCoursePrice')?.value || 0);
+  workshopTotal = overallPrice;
+  subtotal += workshopTotal;
+
+  // Staff charges
+  const staffOn = document.getElementById('toggleStaff')?.checked;
+  let staffCost = 0;
+  if (staffOn) {
+    const rate = parseFloat(document.getElementById('staffRate')?.value||0);
+    const hrs2 = parseFloat(document.getElementById('staffHours')?.value||0);
+    const count2 = parseInt(document.getElementById('staffCount')?.value||1);
+    staffCost = rate * hrs2 * count2;
+    const scd = document.getElementById('staffCostDisplay');
+    if (scd) scd.value = '$' + staffCost.toFixed(2);
+  }
+  subtotal += staffCost;
+
+  // Project expenses
+  const projExpOn = document.getElementById('toggleProjExp')?.checked;
+  let projExpAmount = 0;
+  if (projExpOn) {
+    projExpAmount = parseFloat(document.getElementById('projExpAmount')?.value||0);
+  }
+  subtotal += projExpAmount;
+
   const expedited = document.getElementById('toggleExpedited').checked;
   const expeditedPct = parseFloat(document.getElementById('expeditedPct')?.value||50) / 100;
   const expeditedFee = expedited ? (totalMat + totalMachine) * expeditedPct : 0;
@@ -870,20 +1092,25 @@ function calcTotal() {
   }
   subtotal += designFee;
 
+  const qType = document.querySelector('input[name="quoteType"]:checked').value;
+  const isWorkshopType = qType === 'workshop';
   let tieFee = 0, gst = 0, grand = subtotal;
   let costExclGST = subtotal, costInclGST = subtotal;
-  if (isExternal) { tieFee = subtotal * 0.3; costExclGST = subtotal + tieFee; gst = costExclGST * 0.09; costInclGST = costExclGST + gst; grand = costInclGST; }
+  if (isExternal || isWorkshopType) { tieFee = subtotal * 0.3; costExclGST = subtotal + tieFee; gst = costExclGST * 0.09; costInclGST = costExclGST + gst; grand = costInclGST; }
 
   // summary
   const lines = [];
   if (totalMat > 0) lines.push(['Material Cost', totalMat]);
   if (totalMachine > 0) lines.push(['Machine Cost', totalMachine]);
   if (accTotal > 0) lines.push(['Accessories', accTotal]);
+  if (workshopTotal > 0) lines.push(['Course Fee', workshopTotal]);
   if (helperCost > 0) lines.push(['Student Helpers', helperCost]);
+  if (staffCost > 0) lines.push(['Staff Charges', staffCost]);
+  if (projExpAmount > 0) lines.push(['Project Expenses', projExpAmount]);
   if (expeditedFee > 0) lines.push([`Expedited (${expPctLabel}%)`, expeditedFee]);
   if (designFee > 0) lines.push(['Design Fee', designFee]);
-  if (tieFee > 0) lines.push(['SP Surcharge (30%)', tieFee]);
-  if (isExternal && costExclGST > 0) lines.push(['Total (excl. GST)', costExclGST]);
+  if (tieFee > 0) lines.push(['SP Charge Rate (18.5%)', tieFee]);
+  if ((isExternal || isWorkshopType) && costExclGST > 0) lines.push(['Total (excl. GST)', costExclGST]);
   if (gst > 0) lines.push(['GST (9%)', gst]);
 
   document.getElementById('summaryLines').innerHTML = lines.map(([l,v])=>
@@ -894,7 +1121,11 @@ function calcTotal() {
   const fpEl = document.getElementById('finePrintSidebar');
   fpEl.style.display = helpersOn ? 'block' : 'none';
 
-  window.__qd = { totalMat, totalMachine, accTotal, helperCost, expeditedFee, expPctLabel, designFee, tieFee, gst, costExclGST, subtotal, grand, isExternal, totalHrs };
+  // Update date duration display if in workshop mode
+  const qTypeNow = document.querySelector('input[name="quoteType"]:checked').value;
+  if (qTypeNow === 'workshop') getWorkshopDateInfo();
+
+  window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs };
 }
 
 // ============================================================
@@ -908,6 +1139,155 @@ function formatDate(dateStr) {
 }
 
 // ============================================================
+// WORKSHOP DATES
+// ============================================================
+let currentDateMode = 'continuous';
+let specificDateCount = 0;
+
+function setDateMode(mode) {
+  currentDateMode = mode;
+  document.getElementById('dateContinuousBlock').style.display = mode === 'continuous' ? '' : 'none';
+  document.getElementById('dateSpecificBlock').style.display = mode === 'specific' ? '' : 'none';
+  document.getElementById('dateModeContBtn').classList.toggle('active', mode === 'continuous');
+  document.getElementById('dateModeSpecBtn').classList.toggle('active', mode === 'specific');
+  calcTotal();
+}
+
+function addSpecificDate() {
+  specificDateCount++;
+  const id = specificDateCount;
+  const div = document.createElement('div');
+  div.className = 'specific-date-row';
+  div.id = 'spec-date-row-' + id;
+  div.innerHTML =
+    '<input type="date" id="spec-date-' + id + '" onchange="updateSpecificDaysCount(); calcTotal();" style="flex:1;">' +
+    '<button class="btn btn-danger btn-sm" onclick="removeSpecificDate(' + id + ')">✕</button>';
+  document.getElementById('specificDatesList').appendChild(div);
+  updateSpecificDaysCount();
+}
+
+function removeSpecificDate(id) {
+  const el = document.getElementById('spec-date-row-' + id);
+  if (el) el.remove();
+  updateSpecificDaysCount();
+  calcTotal();
+}
+
+function updateSpecificDaysCount() {
+  const dates = [];
+  document.querySelectorAll('[id^="spec-date-"]').forEach(inp => {
+    if (inp.value) dates.push(inp.value);
+  });
+  const el = document.getElementById('specificDaysCount');
+  if (el) el.textContent = dates.length > 0 ? dates.length + ' day(s) selected' : '';
+}
+
+function getWorkshopDateInfo() {
+  if (currentDateMode === 'continuous') {
+    const from = document.getElementById('dateFrom')?.value;
+    const to = document.getElementById('dateTo')?.value;
+    if (from && to) {
+      const d1 = new Date(from), d2 = new Date(to);
+      const diffMs = d2 - d1;
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+      const dispEl = document.getElementById('dateDurationDisplay');
+      if (dispEl) dispEl.value = diffDays > 0 ? diffDays + ' day(s)' : 'Check dates';
+      if (diffDays > 0) {
+        return {
+          mode: 'continuous',
+          from: formatDate(from),
+          to: formatDate(to),
+          days: diffDays,
+          display: formatDate(from) + ' to ' + formatDate(to) + ' (' + diffDays + ' day' + (diffDays > 1 ? 's' : '') + ')'
+        };
+      }
+    }
+    const dispEl = document.getElementById('dateDurationDisplay');
+    if (dispEl) dispEl.value = '';
+    return null;
+  } else {
+    const dates = [];
+    document.querySelectorAll('[id^="spec-date-"]').forEach(inp => {
+      if (inp.value) dates.push(inp.value);
+    });
+    if (dates.length > 0) {
+      dates.sort();
+      const formatted = dates.map(d => formatDate(d));
+      return {
+        mode: 'specific',
+        dates: formatted,
+        days: dates.length,
+        display: formatted.join(', ') + ' (' + dates.length + ' day' + (dates.length > 1 ? 's' : '') + ')'
+      };
+    }
+    return null;
+  }
+}
+
+// ============================================================
+// WORKSHOP ITEMS
+// ============================================================
+let workshopItemCount = 0;
+const WORKSHOP_LABELS = {
+  '3dcad':      '3D CAD',
+  '3dprint':    '3D Printing',
+  'lasercut':   'Laser Cut',
+  'programming':'Programming',
+  'cardboard':  'Cardboard Sculpt',
+  'equipment':  'Usage of FabLab Equipment',
+  'custom':     'Custom Item'
+};
+
+function addWorkshopItem(type) {
+  // Grey out button (except custom which is always addable)
+  if (type !== 'custom') {
+    const btn = document.getElementById('wi-btn-' + type);
+    if (btn) btn.classList.add('used');
+  }
+  workshopItemCount++;
+  const id = workshopItemCount;
+  const label = WORKSHOP_LABELS[type] || 'Item';
+  const div = document.createElement('div');
+  div.className = 'workshop-item wi-row';
+  div.dataset.wid = id;
+  div.dataset.wtype = type;
+  // Custom item gets an editable label
+  const placeholders = {
+    '3dcad':       'e.g. Basic Fusion | Onshape | Shapr | Blender CAD',
+    '3dprint':     'e.g. Safety and operational procedure of 3D Printer which includes software operation',
+    'lasercut':    'e.g. Safety and operational procedure of Laser cutter which includes software operation',
+    'programming': 'e.g. Micropython, Vibe programming',
+    'cardboard':   'e.g. Cut and assembly of Cardboard',
+    'custom':      'Details covered...'
+  };
+  const ph = placeholders[type] || 'Details covered...';
+  const labelHtml = type === 'custom'
+    ? '<input type="text" id="wi-customlabel-' + id + '" placeholder="Item name..." oninput="calcTotal()" style="font-weight:700;color:#15803d;width:100%;">'
+    : '<div class="wi-label">' + label + '</div>';
+  const detailHtml = type === 'equipment'
+    ? '<div style="font-size:11px;color:#6b7280;font-style:italic;padding:2px 0;">Usage of FabLab Equipment</div>'
+    : '<input type="text" id="wi-detail-' + id + '" placeholder="' + ph + '" oninput="calcTotal()" style="width:100%;">';
+  div.innerHTML =
+    labelHtml +
+    detailHtml +
+    '<button class="btn btn-danger btn-sm" onclick="removeWorkshopItem(' + id + ', \'' + type + '\')">✕</button>';
+  document.getElementById('workshopItems').appendChild(div);
+  calcTotal();
+}
+
+function removeWorkshopItem(id, type) {
+  const el = document.querySelector('.workshop-item[data-wid="' + id + '"]');
+  if (el) el.remove();
+  // Re-enable button (except custom)
+  if (type && type !== 'custom') {
+    const btn = document.getElementById('wi-btn-' + type);
+    if (btn) btn.classList.remove('used');
+  }
+  calcTotal();
+}
+
+
+// ============================================================
 // BUILD QUOTE DOC HTML
 // ============================================================
 function buildQuoteDoc() {
@@ -915,127 +1295,169 @@ function buildQuoteDoc() {
   const d = window.__qd || {};
   const clientName = document.getElementById('clientName').value || '—';
   const jobTitle = document.getElementById('jobTitle').value || '—';
-  const refNo = 'SP-TTC/' + (document.getElementById('refNo').value || '');
+  const rawRef = document.getElementById('refNo').value || '';
   const dateRaw = document.getElementById('quoteDate').value;
   const dateStr = formatDate(dateRaw);
   const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const isInternal = type === 'internal';
   const isExternal = type === 'external';
-  const docTitle = isExternal ? 'Preliminary Quotation' : 'Internal Project Quotation';
+  const isWorkshop = type === 'workshop';
   const helpersOn = document.getElementById('toggleHelpers').checked;
 
-  // Table rows
+  const refNo = isWorkshop ? rawRef : ('SP-TTC/' + rawRef);
+  const docTitle = isInternal ? 'Internal Project Quotation' : (isWorkshop ? 'Workshop / Course Quotation' : 'Preliminary Quotation');
+
+  // ── Standard line items (internal / external) ──
   let rows = '';
-  document.querySelectorAll('.line-item').forEach(item => {
-    const id = item.id.replace('li-','');
-    const desc = document.getElementById(`li-desc-${id}`)?.value || 'Item';
-    const qty = document.getElementById(`li-qty-${id}`)?.value || 1;
-    const hrs = document.getElementById(`li-hrs-${id}`)?.value || 0;
-    const machine = document.getElementById(`li-machine-${id}`)?.value || '';
-    const mLabel = { laser_cutter:'Laser Cutter', large_format:'Large Format Printer', '3d_printer':'3D Printer', cardboard_cutter:'Cardboard Cutter' }[machine] || '';
-    const r = calcMaterialCost(id);
-    const itemTotal = r.mat + r.machine;
-    rows += `<tr>
-      <td>${desc}<div class="qdoc-desc-detail">${r.descDetail}${mLabel ? ' · ' + mLabel : ''}${hrs>0?' · '+hrs+'hr×'+qty:''}</div></td>
-      <td style="text-align:center">${qty}</td>
-      <td class="r">$${r.mat.toFixed(2)}</td>
-      <td class="r">$${r.machine.toFixed(2)}</td>
-      <td class="r">$${itemTotal.toFixed(2)}</td>
-    </tr>`;
-  });
+  if (!isWorkshop) {
+    document.querySelectorAll('.line-item').forEach(item => {
+      const id = item.id.replace('li-','');
+      const desc = document.getElementById('li-desc-'+id)?.value || 'Item';
+      const qty = document.getElementById('li-qty-'+id)?.value || 1;
+      const hrs = document.getElementById('li-hrs-'+id)?.value || 0;
+      const machine = document.getElementById('li-machine-'+id)?.value || '';
+      const mLabel = { laser_cutter:'Laser Cutter', large_format:'Large Format Printer', '3d_printer':'3D Printer', cardboard_cutter:'Cardboard Cutter' }[machine] || '';
+      const r = calcMaterialCost(id);
+      const itemTotal = r.mat + r.machine;
+      rows += '<tr><td>' + desc + '<div class="qdoc-desc-detail">' + r.descDetail + (mLabel?' · '+mLabel:'') + (hrs>0?' · '+hrs+'hr×'+qty:'') + '</div></td>'
+        + '<td style="text-align:center">' + qty + '</td>'
+        + '<td class="r">$' + r.mat.toFixed(2) + '</td>'
+        + '<td class="r">$' + r.machine.toFixed(2) + '</td>'
+        + '<td class="r">$' + itemTotal.toFixed(2) + '</td></tr>';
+    });
+    document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
+      const id = el.id.replace('acc-desc-','');
+      const cost = parseFloat(document.getElementById('acc-cost-'+id)?.value||0);
+      if (el.value || cost > 0) {
+        rows += '<tr><td>' + (el.value||'Accessory') + '<div class="qdoc-desc-detail">Accessory / Consumable</div></td>'
+          + '<td style="text-align:center">1</td><td class="r">$' + cost.toFixed(2) + '</td><td class="r">$0.00</td><td class="r">$' + cost.toFixed(2) + '</td></tr>';
+      }
+    });
+  }
 
-  document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
-    const id = el.id.replace('acc-desc-','');
-    const cost = parseFloat(document.getElementById(`acc-cost-${id}`)?.value||0);
-    if (el.value || cost > 0) {
-      rows += `<tr><td>${el.value||'Accessory'}<div class="qdoc-desc-detail">Accessory / Consumable</div></td><td style="text-align:center">1</td><td class="r">$${cost.toFixed(2)}</td><td class="r">$0.00</td><td class="r">$${cost.toFixed(2)}</td></tr>`;
+  // ── Workshop course items ──
+  let workshopRows = '';
+  if (isWorkshop) {
+    document.querySelectorAll('.workshop-item').forEach(wi => {
+      const wid = wi.dataset.wid;
+      const wtype = wi.dataset.wtype;
+      const label = wtype === 'custom'
+        ? (document.getElementById('wi-customlabel-'+wid)?.value || 'Custom Item')
+        : (WORKSHOP_LABELS[wtype] || 'Item');
+      const detailEl = document.getElementById('wi-detail-'+wid);
+      const detail = detailEl ? detailEl.value : (wtype === 'equipment' ? 'Usage of FabLab Equipment' : '');
+      workshopRows += '<tr><td style="padding:9px 10px;border-bottom:1px solid #f0f0f0;">'
+        + label
+        + (detail ? '<div class="qdoc-desc-detail">'+detail+'</div>' : '')
+        + '</td></tr>';
+    });
+    // Overall price row
+    const overallP = parseFloat(document.getElementById('overallCoursePrice')?.value || 0);
+    const overallNote = document.getElementById('overallCoursePriceNote')?.value || '';
+    if (overallP > 0) {
+      workshopRows += '<tr style="background:#f0fdf4;"><td style="padding:10px;font-weight:700;color:#15803d;border-top:2px solid #bbf7d0;">'
+        + 'Overall Course Fee'
+        + (overallNote ? '<div class="qdoc-desc-detail" style="color:#15803d;">' + overallNote + '</div>' : '')
+        + '</td></tr>';
     }
-  });
+  }
 
-  // Totals block
-  const totalRows = [
-    d.helperCost > 0 ? ['Student Helpers / Agent', d.helperCost] : null,
-    d.expeditedFee > 0 ? [`Expedited Work (${d.expPctLabel||50}%)`, d.expeditedFee] : null,
-    d.designFee > 0 ? ['Design Fee', d.designFee] : null,
+  // ── Extra fee rows (staff charges, project expenses) ──
+  const staffOn = document.getElementById('toggleStaff')?.checked;
+  const projExpOn = document.getElementById('toggleProjExp')?.checked;
+  let extraRows = '';
+  if (staffOn && d.staffCost > 0) {
+    const rate = document.getElementById('staffRate')?.value || '0';
+    const hrs2 = document.getElementById('staffHours')?.value || '0';
+    const cnt = document.getElementById('staffCount')?.value || '1';
+    const leave = document.getElementById('staffLeave')?.value === 'yes' ? ' · Leave taken: Yes' : '';
+    extraRows += '<tr><td>Staff Charges<div class="qdoc-desc-detail">$' + rate + '/hr × ' + hrs2 + 'hrs × ' + cnt + ' staff' + leave + '</div></td>'
+      + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + d.staffCost.toFixed(2) + '</td></tr>';
+  }
+  if (projExpOn && d.projExpAmount > 0) {
+    const expDesc = document.getElementById('projExpDesc')?.value || 'Project Expenses';
+    extraRows += '<tr><td>' + expDesc + '<div class="qdoc-desc-detail">Project Expenses</div></td>'
+      + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + d.projExpAmount.toFixed(2) + '</td></tr>';
+  }
+
+  const allRows = (isWorkshop ? workshopRows : rows) + extraRows;
+
+  // ── Totals block ──
+  const surchargeLabel = 'SP Charge Rate (18.5%)';
+  const totalRowsArr = [
+    (d.helperCost > 0 && !isWorkshop) ? ['Student Helpers / Agent', d.helperCost] : null,
+    (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work (' + (d.expPctLabel||50) + '%)', d.expeditedFee] : null,
+    (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
     ['Subtotal', d.subtotal],
-    d.tieFee > 0 ? ['SP Surcharge (30%)', d.tieFee] : null,
-    (d.isExternal && d.costExclGST > 0) ? ['Total (excl. GST)', d.costExclGST] : null,
+    d.tieFee > 0 ? [surchargeLabel, d.tieFee] : null,
+    ((isExternal || isWorkshop) && d.costExclGST > 0) ? ['Total (excl. GST)', d.costExclGST] : null,
     d.gst > 0 ? ['GST (9%)', d.gst] : null,
-  ].filter(Boolean).map(([l,v])=>`<div class="qdoc-total-row"><span>${l}</span><span class="amt">$${v.toFixed(2)}</span></div>`).join('');
+  ].filter(Boolean).map(([l,v]) => '<div class="qdoc-total-row"><span>'+l+'</span><span class="amt">$'+v.toFixed(2)+'</span></div>').join('');
 
-  // Internal vires table
-  const viresBlock = !isExternal ? `
-    <div class="qdoc-vires">
-      <div class="qdoc-vires-title">Internal Vires — Charging Details</div>
-      <table class="qdoc-vires-table">
-        <tr><td>Fund</td><td>SPO_DCG0001 SPO General Fund</td></tr>
-        <tr><td>Cost Centre</td><td>AQR: SPO_CC0024</td></tr>
-        <tr><td>Ledger Account</td><td>284100: Student-related Expenses</td></tr>
-        <tr><td>Spend Category</td><td>284104SC Student Local Programmes and Activities</td></tr>
-        <tr><td>Program ID</td><td>No Program ID for General Fund</td></tr>
-        <tr><td>Memo</td><td>Nil</td></tr>
-      </table>
-    </div>` : '';
+  // ── Vires block (internal only) ──
+  const viresBlock = isInternal ? '<div class="qdoc-vires"><div class="qdoc-vires-title">Internal Vires — Charging Details</div>'
+    + '<table class="qdoc-vires-table">'
+    + '<tr><td>Fund</td><td>SPO_DCG0001 SPO General Fund</td></tr>'
+    + '<tr><td>Cost Centre</td><td>AQR: SPO_CC0024</td></tr>'
+    + '<tr><td>Ledger Account</td><td>284100: Student-related Expenses</td></tr>'
+    + '<tr><td>Spend Category</td><td>284104SC Student Local Programmes and Activities</td></tr>'
+    + '<tr><td>Program ID</td><td>No Program ID for General Fund</td></tr>'
+    + '<tr><td>Memo</td><td>Nil</td></tr>'
+    + '</table></div>' : '';
 
-  // Fine print
-  const finePrint = helpersOn ? `<div class="qdoc-fineprint">* Workmanship calculation is based on total time to produce × student rate ($11.00) [Student Agent involved]</div>` : '';
+  const finePrint = (helpersOn && !isWorkshop) ? '<div class="qdoc-fineprint">* Workmanship based on total time × student rate ($11.00) [Student Agent involved]</div>' : '';
 
-  return `<div class="quote-doc">
-    <div class="qdoc-header">
-      <div class="qdoc-logo-block">
-        <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1;"><span style="color:#c0392b;">SP</span> FabLab</div>
-        <div class="qdoc-address">Department of Academy Quality & Resources<br>Fablab<br>500 Dover Road, S13651</div>
-      </div>
-      <div class="qdoc-title-block">
-        <div class="qdoc-doc-title">${docTitle}</div>
-        <div class="qdoc-ref">
-          <strong>Project Ref No:</strong> ${refNo}<br>
-          <strong>Date:</strong> ${dateStr}<br>
-          <span class="qdoc-type-badge ${type}">${type.toUpperCase()}</span>
-        </div>
-      </div>
-    </div>
+  const footerNote = isInternal
+    ? 'Internal pricing — SP Surcharge and GST are not applicable for internal vires.'
+    : 'SP Charge Rate (18.5%) and GST (9%) are applied to this quotation.';
 
-    <div class="qdoc-client">
-      <div class="qdoc-client-section">
-        <h4>Client</h4>
-        <p>${clientName}</p>
-      </div>
-      <div class="qdoc-client-section">
-        <h4>Job Title</h4>
-        <p>${jobTitle}</p>
-      </div>
-    </div>
+  const workshopDates = isWorkshop ? getWorkshopDateInfo() : null;
+  const refLine = isWorkshop
+    ? '<strong>Ref No:</strong> ' + (rawRef || '—') + '<br>'
+    : '<strong>Project Ref No:</strong> ' + refNo + '<br>';
+  const dateLine = (isWorkshop && workshopDates)
+    ? '<strong>Workshop Dates:</strong> ' + workshopDates.display + '<br>'
+    : '';
 
-    <table class="qdoc-table">
-      <thead><tr>
-        <th>Description</th>
-        <th style="text-align:center">Qty</th>
-        <th class="r">Material</th>
-        <th class="r">Machine</th>
-        <th class="r">Item Total</th>
-      </tr></thead>
-      <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px;">No items added</td></tr>'}</tbody>
-    </table>
-
-    <div class="qdoc-totals-wrap">
-      <div class="qdoc-totals">
-        ${totalRows}
-        <div class="qdoc-total-row grand">
-          <span>TOTAL (SGD)</span>
-          <span class="amt">$${d.grand?.toFixed(2)||'0.00'}</span>
-        </div>
-      </div>
-    </div>
-
-    ${finePrint}
-    ${viresBlock}
-
-    <div class="qdoc-footer">
-      This quotation is valid for 30 days from the date of issue. All amounts in Singapore Dollars (SGD).<br>
-      ${isExternal ? 'Prices inclusive of SP Surcharge (30%) and GST (9%).' : 'Internal pricing — SP Surcharge and GST are not applicable for internal vires.'}<br>
-      SP FabLab · Department of Academy Quality & Resources · 500 Dover Road, S13651
-    </div>
-  </div>`;
+  return '<div class="quote-doc">'
+    + '<div class="qdoc-header">'
+    +   '<div class="qdoc-logo-block">'
+    +     '<div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1;"><span style="color:#c0392b;">SP</span> FabLab</div>'
+    +     '<div class="qdoc-address">Department of Academy Quality &amp; Resources<br>Fablab<br>500 Dover Road, S13651</div>'
+    +   '</div>'
+    +   '<div class="qdoc-title-block">'
+    +     '<div class="qdoc-doc-title">' + docTitle + '</div>'
+    +     '<div class="qdoc-ref">'
+    +       refLine
+    +       dateLine
+    +       '<strong>Date:</strong> ' + dateStr + '<br>'
+    +       '<span class="qdoc-type-badge ' + type + '">' + (isWorkshop ? 'WORKSHOP / COURSE' : type.toUpperCase()) + '</span>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="qdoc-client">'
+    +   '<div class="qdoc-client-section"><h4>Client</h4><p>' + clientName + '</p></div>'
+    +   '<div class="qdoc-client-section"><h4>' + (isWorkshop ? 'Course / Programme' : 'Job Title') + '</h4><p>' + jobTitle + '</p></div>'
+    + '</div>'
+    + '<table class="qdoc-table"><thead><tr>'
+    +   (isWorkshop
+        ? '<th>Course Components Covered</th>'
+        : '<th>Description</th><th style="text-align:center">Qty</th><th class="r">Material</th><th class="r">Machine</th><th class="r">Item Total</th>')
+    + '</tr></thead>'
+    + '<tbody>' + (allRows || '<tr><td colspan="' + (isWorkshop ? '1' : '5') + '" style="text-align:center;color:#aaa;padding:16px;">No items added</td></tr>') + '</tbody>'
+    + '</table>'
+    + '<div class="qdoc-totals-wrap"><div class="qdoc-totals">'
+    +   totalRowsArr
+    +   '<div class="qdoc-total-row grand"><span>TOTAL (SGD)</span><span class="amt">$' + (d.grand?.toFixed(2)||'0.00') + '</span></div>'
+    + '</div></div>'
+    + finePrint
+    + viresBlock
+    + '<div class="qdoc-footer">'
+    +   'This quotation is valid for 30 days from the date of issue. All amounts in Singapore Dollars (SGD).<br>'
+    +   footerNote + '<br>'
+    +   'SP FabLab · Department of Academy Quality &amp; Resources · 500 Dover Road, S13651'
+    + '</div>'
+    + '</div>';
 }
 
 // ============================================================
@@ -1129,7 +1551,8 @@ function printWithTitle(content, title, isFullDoc) {
 
 function printDoc() {
   const content = document.getElementById('quoteDocContent').innerHTML;
-  const refNo = 'SP-TTC/' + (document.getElementById('refNo').value || '');
+  const rawRef = document.getElementById('refNo').value || '';
+  const refNo = type === 'workshop' ? rawRef : ('SP-TTC/' + rawRef);
   const client = document.getElementById('clientName').value || 'Unknown';
   const title = makeFilename('', refNo, client);
   printWithTitle(content, title, false);
@@ -1140,22 +1563,51 @@ function printDoc() {
 // ============================================================
 function collectItems() {
   const items = [];
-  document.querySelectorAll('.line-item').forEach(li => {
-    const id = li.id.replace('li-','');
-    const desc = document.getElementById(`li-desc-${id}`)?.value || '';
-    const qty = document.getElementById(`li-qty-${id}`)?.value || '1';
-    const r = calcMaterialCost(id);
-    if (desc || r.mat > 0) {
-      items.push({ desc, qty, detail: r.descDetail });
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  if (type !== 'workshop') {
+    document.querySelectorAll('.line-item').forEach(li => {
+      const id = li.id.replace('li-','');
+      const desc = document.getElementById('li-desc-'+id)?.value || '';
+      const qty = document.getElementById('li-qty-'+id)?.value || '1';
+      const r = calcMaterialCost(id);
+      if (desc || r.mat > 0) items.push({ desc: desc || 'Item', qty, detail: r.descDetail });
+    });
+    document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
+      const id = el.id.replace('acc-desc-','');
+      const cost = parseFloat(document.getElementById('acc-cost-'+id)?.value||0);
+      if (el.value || cost > 0) items.push({ desc: el.value || 'Accessory', qty: '1', detail: 'Accessory / Consumable' });
+    });
+  } else {
+    document.querySelectorAll('.workshop-item').forEach(wi => {
+      const wid = wi.dataset.wid;
+      const wtype = wi.dataset.wtype;
+      const label = wtype === 'custom'
+        ? (document.getElementById('wi-customlabel-'+wid)?.value || 'Custom Item')
+        : (WORKSHOP_LABELS[wtype] || 'Item');
+      const detailEl2 = document.getElementById('wi-detail-'+wid);
+      const detail = detailEl2 ? detailEl2.value : (wtype === 'equipment' ? 'Usage of FabLab Equipment' : '');
+      items.push({ desc: label, qty: '1', detail });
+    });
+    // Overall course price as a DO item
+    const overallP2 = parseFloat(document.getElementById('overallCoursePrice')?.value || 0);
+    if (overallP2 > 0) {
+      const overallNote2 = document.getElementById('overallCoursePriceNote')?.value || '';
+      items.push({ desc: 'Overall Course Fee', qty: '1', detail: overallNote2 });
     }
-  });
-  document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
-    const id = el.id.replace('acc-desc-','');
-    const cost = parseFloat(document.getElementById(`acc-cost-${id}`)?.value||0);
-    if (el.value || cost > 0) {
-      items.push({ desc: el.value || 'Accessory', qty: '1', detail: 'Accessory / Consumable' });
-    }
-  });
+  }
+  // Staff charges
+  if (document.getElementById('toggleStaff')?.checked) {
+    const rate = document.getElementById('staffRate')?.value || '0';
+    const hrs = document.getElementById('staffHours')?.value || '0';
+    const cnt = document.getElementById('staffCount')?.value || '1';
+    const leave = document.getElementById('staffLeave')?.value === 'yes' ? ' · Leave: Yes' : '';
+    items.push({ desc: 'Staff Charges', qty: '1', detail: '$'+rate+'/hr × '+hrs+'hrs × '+cnt+' staff'+leave });
+  }
+  // Project expenses
+  if (document.getElementById('toggleProjExp')?.checked) {
+    const expDesc = document.getElementById('projExpDesc')?.value || 'Project Expenses';
+    items.push({ desc: expDesc, qty: '1', detail: 'Project Expenses' });
+  }
   return items;
 }
 
@@ -1164,7 +1616,8 @@ function saveAndPrint() {
   const d = window.__qd || {};
   const type = document.querySelector('input[name="quoteType"]:checked').value;
   const client = document.getElementById('clientName').value || 'Unknown';
-  const refNo = 'SP-TTC/' + (document.getElementById('refNo').value || '');
+  const rawRef = document.getElementById('refNo').value || '';
+  const refNo = type === 'workshop' ? rawRef : ('SP-TTC/' + rawRef);
   const snapshot = buildQuoteDoc();
   const entry = {
     id: Date.now(),
