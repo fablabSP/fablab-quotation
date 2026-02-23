@@ -1113,9 +1113,17 @@ function calcTotal() {
   if ((isExternal || isWorkshopType) && costExclGST > 0) lines.push(['Total (excl. GST)', costExclGST]);
   if (gst > 0) lines.push(['GST (9%)', gst]);
 
+  const tieSplit = tieFee > 0 ? (tieFee * (11.5/30)) : 0; // 11.5% of subtotal hidden TIE portion
+  const tieNote = (tieFee > 0)
+    ? `<div style="display:flex;align-items:center;gap:6px;margin:4px 0 6px 0;padding:6px 8px;background:#fef9c3;border:1px dashed #fbbf24;border-radius:5px;font-size:11px;color:#92400e;">
+        <span style="font-size:13px;">🔒</span>
+        <span><strong>TIE charge (11.5%): $${tieSplit.toFixed(2)}</strong> — included in SP Charge Rate above. <em>Not shown to client.</em></span>
+      </div>`
+    : '';
+
   document.getElementById('summaryLines').innerHTML = lines.map(([l,v])=>
     `<div class="summary-line"><span class="lbl">${l}</span><span class="val">$${v.toFixed(2)}</span></div>`
-  ).join('') || `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
+  ).join('') + tieNote || `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
   document.getElementById('summaryTotal').textContent = '$' + grand.toFixed(2);
 
   const fpEl = document.getElementById('finePrintSidebar');
