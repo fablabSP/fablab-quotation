@@ -633,13 +633,13 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Fee Mode</label>
-                <select id="designMode" onchange="calcTotal()">
+                <select id="designMode" onchange="updateDesignValueLabel(); calcTotal()">
                   <option value="percent">Percentage (default 20%)</option>
                   <option value="fixed">Fixed Amount ($)</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Value</label>
+                <label id="designValueLabel">Value (%)</label>
                 <input type="number" id="designValue" value="20" min="0" step="0.01" oninput="calcTotal()">
               </div>
             </div>
@@ -710,7 +710,7 @@
           </div>
           <div class="conditional" id="staffFields">
             <div class="conditional-inner">
-              <div class="form-row form-row-4">
+              <div class="form-row">
                 <div class="form-group">
                   <label>Rate ($/hr)</label>
                   <input type="number" id="staffRate" value="0" min="0" step="0.01" oninput="calcTotal()">
@@ -722,13 +722,6 @@
                 <div class="form-group">
                   <label>No. of Staff</label>
                   <input type="number" id="staffCount" value="1" min="1" oninput="calcTotal()">
-                </div>
-                <div class="form-group">
-                  <label>Leave Taken</label>
-                  <select id="staffLeave" onchange="calcTotal()">
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                  </select>
                 </div>
               </div>
               <div class="form-row">
@@ -1231,6 +1224,12 @@ function toggleSection(fieldId) {
   calcTotal();
 }
 
+function updateDesignValueLabel() {
+  const mode = document.getElementById('designMode')?.value;
+  const lbl = document.getElementById('designValueLabel');
+  if (lbl) lbl.textContent = mode === 'fixed' ? 'Value ($)' : 'Value (%)';
+}
+
 function updateQuoteType() {
   const type = document.querySelector('input[name="quoteType"]:checked').value;
   const isInternal = type === 'internal';
@@ -1701,7 +1700,7 @@ function buildQuoteDoc() {
     const rate = document.getElementById('staffRate')?.value || '0';
     const hrs2 = document.getElementById('staffHours')?.value || '0';
     const cnt = document.getElementById('staffCount')?.value || '1';
-    const leave = document.getElementById('staffLeave')?.value === 'yes' ? ' · Leave taken: Yes' : '';
+    const leave = '';
     extraRows += '<tr><td>Staff Charges<div class="qdoc-desc-detail">$' + rate + '/hr × ' + hrs2 + 'hrs × ' + cnt + ' staff' + leave + '</div></td>'
       + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + d.staffCost.toFixed(2) + '</td></tr>';
   }
