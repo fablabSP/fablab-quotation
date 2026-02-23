@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FabLab Quotation Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Aptos:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Aptos fallback stack */
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f0f1f3;
+    --border: #d8dce4;
+    --accent: #c0392b;
+    --accent-dark: #962d22;
+    --accent-light: #fdf2f1;
+    --blue: #1a56db;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --text-light: #9ca3af;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --font: 'Nunito', 'Aptos', 'Segoe UI', Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+  .header-brand { display: flex; align-items: center; gap: 16px; }
+  .header-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .header-title span { color: var(--accent); }
+  .header-divider { width: 1px; height: 28px; background: var(--border); }
+  .header-subtitle { font-size: 12px; color: var(--text-muted); }
+  .header-actions { display: flex; gap: 8px; }
+
+  /* TABS */
+  .tabs { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 0; }
+  .tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-family: var(--font);
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* LAYOUT */
+  .app { display: grid; grid-template-columns: 1fr 320px; gap: 0; min-height: calc(100vh - 96px); }
+  .main { padding: 22px 28px; overflow-y: auto; }
+  .sidebar { background: var(--surface); border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; position: sticky; top: 96px; height: calc(100vh - 96px); box-shadow: -2px 0 8px rgba(0,0,0,0.04); }
+
+  /* BUTTONS */
+  .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue:hover { background: #1447c0; }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-danger { background: transparent; color: #dc2626; border: 1px solid #fca5a5; font-size: 11px; padding: 4px 8px; }
+  .btn-danger:hover { background: #fef2f2; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* SECTIONS */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title-icon { width: 18px; height: 18px; background: var(--accent-light); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+
+  /* FORM */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-row-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.3px; text-transform: uppercase; }
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,57,43,0.08); }
+  input[readonly] { background: #fafafa; color: var(--text-muted); cursor: default; }
+  select option { background: #fff; }
+  .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+    background: var(--surface2);
+  }
+  .radio-label:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .radio-label input { display: none; }
+
+  /* TOGGLES */
+  .toggle-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .toggle-row:first-child { padding-top: 0; }
+  .toggle-info { flex: 1; }
+  .toggle-label { font-size: 13px; font-weight: 700; color: var(--text); }
+  .toggle-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; margin-top: 2px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 22px; cursor: pointer; transition: 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+  .conditional { display: none; }
+  .conditional.show { display: block; }
+  .conditional-inner { background: var(--accent-light); border: 1px solid #f5c6c2; border-radius: 6px; padding: 12px; margin: 8px 0; }
+
+  /* LINE ITEMS */
+  .line-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    position: relative;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .line-item:hover { border-color: #b0b7c3; box-shadow: var(--shadow); }
+  .line-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .line-item-num { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); background: var(--border); padding: 2px 8px; border-radius: 10px; }
+  .line-item-cost { font-size: 14px; font-weight: 800; color: var(--accent); }
+  .add-item-btn {
+    width: 100%;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .add-item-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* ACCESSORIES */
+  .acc-row { display: grid; grid-template-columns: 1fr 110px auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+  /* SIDEBAR */
+  .sidebar-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+  .sidebar-section { margin-bottom: 16px; }
+  .summary-line { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .summary-line:last-child { border-bottom: none; }
+  .summary-line .lbl { color: var(--text-muted); }
+  .summary-line .val { font-weight: 700; color: var(--text); }
+  .summary-total { background: var(--accent); color: #fff; border-radius: 8px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .summary-total .lbl { font-size: 12px; font-weight: 700; }
+  .summary-total .val { font-size: 18px; font-weight: 800; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .badge-internal { background: #dbeafe; color: #1d4ed8; }
+  .badge-external { background: #fef3c7; color: #b45309; }
+  .tax-note { font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+  .fine-print { font-size: 10px; color: var(--text-light); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.5; }
+
+  /* QUOTE LOG */
+  .log-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; }
+  .log-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+  .log-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+  .log-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .log-item-title { font-weight: 700; font-size: 13px; }
+  .log-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .log-item-total { font-weight: 800; color: var(--accent); font-size: 14px; }
+  .log-filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); font-size: 11px; font-weight: 700; cursor: pointer; font-family: var(--font); color: var(--text-muted); transition: all 0.15s; }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; overflow-y: auto; padding: 30px 16px; }
+  .modal-overlay.show { display: flex; justify-content: center; align-items: flex-start; }
+  .modal-box { background: #fff; width: 100%; max-width: 780px; border-radius: 10px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  .modal-toolbar { background: #1a1d23; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .modal-toolbar-title { color: #fff; font-size: 13px; font-weight: 700; }
+
+  /* QUOTE DOCUMENT */
+  .quote-doc { padding: 40px 48px; font-family: var(--font); color: #1a1d23; }
+  .qdoc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #1a1d23; }
+  .qdoc-logo-block {}
+  .qdoc-logo img { height: 48px; }
+  .qdoc-address { font-size: 11px; color: #555; margin-top: 6px; line-height: 1.7; }
+  .qdoc-title-block { text-align: right; }
+  .qdoc-doc-title { font-size: 20px; font-weight: 800; color: #1a1d23; text-transform: uppercase; letter-spacing: 0.5px; }
+  .qdoc-ref { font-size: 11px; color: #666; margin-top: 6px; line-height: 1.8; }
+  .qdoc-ref strong { color: #1a1d23; font-weight: 700; }
+  .qdoc-type-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px; }
+  .qdoc-type-badge.internal { background: #dbeafe; color: #1d4ed8; }
+  .qdoc-type-badge.external { background: #fef3c7; color: #b45309; }
+
+  .qdoc-client { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; padding: 14px 16px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e5e7eb; }
+  .qdoc-client-section h4 { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: #9ca3af; margin-bottom: 4px; }
+  .qdoc-client-section p { font-size: 14px; font-weight: 700; }
+  .qdoc-client-section .sub { font-size: 12px; font-weight: 400; color: #555; }
+
+  .qdoc-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px; }
+  .qdoc-table th { background: #1a1d23; color: #fff; padding: 9px 10px; text-align: left; font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; font-weight: 700; }
+  .qdoc-table th.r { text-align: right; }
+  .qdoc-table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  .qdoc-table td.r { text-align: right; font-weight: 600; }
+  .qdoc-table tr:nth-child(even) td { background: #fafafa; }
+  .qdoc-desc-detail { font-size: 10px; color: #888; margin-top: 2px; }
+
+  .qdoc-totals-wrap { display: flex; justify-content: flex-end; }
+  .qdoc-totals { width: 280px; font-size: 12px; }
+  .qdoc-total-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+  .qdoc-total-row.grand { background: #1a1d23; color: #fff; padding: 10px 12px; border-radius: 6px; margin-top: 8px; font-weight: 800; font-size: 14px; border: none; }
+  .qdoc-total-row .amt { font-weight: 700; }
+
+  /* INTERNAL VIRES TABLE */
+  .qdoc-vires { margin-top: 24px; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; }
+  .qdoc-vires-title { background: #1a1d23; color: #fff; padding: 8px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .qdoc-vires-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .qdoc-vires-table td { padding: 7px 14px; border-bottom: 1px solid #f0f0f0; }
+  .qdoc-vires-table td:first-child { font-weight: 700; color: #555; width: 160px; background: #f8f9fa; }
+  .qdoc-vires-table tr:last-child td { border-bottom: none; }
+
+  /* HELPERS FINE PRINT */
+  .qdoc-fineprint { margin-top: 16px; padding: 10px 14px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; font-size: 10px; color: #78350f; }
+  .qdoc-footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #9ca3af; text-align: center; line-height: 1.6; }
+
+  /* NOTIFICATION */
+  .notif { position: fixed; bottom: 20px; right: 20px; background: #1a1d23; color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 9999; transform: translateY(80px); transition: transform 0.25s; box-shadow: var(--shadow-md); }
+  .notif.show { transform: translateY(0); }
+
+  @media print {
+    body { background: #fff; }
+    .header, .tabs, .sidebar, .header-actions { display: none !important; }
+    .app { display: block; }
+    .main { padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-brand">
+    <div class="header-title"><span>FabLab</span> Quotation Generator</div>
+    <div class="header-divider"></div>
+    <div class="header-subtitle">SP · Department of Academy Quality & Resources</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost btn-sm" onclick="resetForm()">↺ Reset</button>
+    <button class="btn btn-secondary btn-sm" onclick="showPreview()">⎙ Preview</button>
+    <button class="btn btn-primary btn-sm" onclick="saveAndPrint()">💾 Save & Print</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('builder', this)">📋 Quote Builder</button>
+  <button class="tab" onclick="switchTab('log', this)">📁 Quote Log</button>
+</div>
+
+<!-- QUOTE BUILDER PANEL -->
+<div class="panel active" id="panel-builder">
+  <div class="app">
+    <div class="main">
+
+      <!-- PROJECT INFO -->
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">📄</span> Project Information</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Client Name</label>
+            <input type="text" id="clientName" placeholder="e.g. Faculty of Engineering" oninput="calcTotal()">
+          </div>
+          <div class="form-group">
+            <label>Job Title</label>
+            <input type="text" id="jobTitle" placeholder="e.g. FYP Exhibition Display" oninput="calcTotal()">
+          </div>
+        </div>
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label>Project Ref No.</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;padding:8px 0;">SP-TTC/</span>
+              <input type="text" id="refNo" placeholder="2024-001" oninput="calcTotal()">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="quoteDate" onchange="calcTotal()">
+          </div>
+          <div class="form-group">
+            <label>Quote Type</label>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="quoteType" value="internal" onchange="updateQuoteType()" checked> Internal</label>
+              <label class="radio-label"><input type="radio" name="quoteType" value="external" onchange="updateQuoteType()"> External</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LINE ITEMS -->
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">🔩</span> Line Items</div>
+        <div id="lineItems"></div>
+        <button class="add-item-btn" onclick="addLineItem()">+ Add Line Item</button>
+      </div>
+
+      <!-- ACCESSORIES -->
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">🔧</span> Accessories & Consumables</div>
+        <div id="accessories"></div>
+        <button class="add-item-btn" onclick="addAccessory()" style="margin-top:6px;">+ Add Accessory</button>
+      </div>
+
+      <!-- EXTRAS -->
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">⚙️</span> Fees & Extras</div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Design Fee</div>
+            <div class="toggle-desc">Applied on material + machine subtotal</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="toggleDesign" onchange="toggleSection('designFields')"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="conditional" id="designFields">
+          <div class="conditional-inner">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Fee Mode</label>
+                <select id="designMode" onchange="calcTotal()">
+                  <option value="percent">Percentage (default 20%)</option>
+                  <option value="fixed">Fixed Amount ($)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Value</label>
+                <input type="number" id="designValue" value="20" min="0" step="0.01" oninput="calcTotal()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Expedited Work</div>
+            <div class="toggle-desc">Urgency surcharge on material + machine cost</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="toggleExpedited" onchange="toggleSection('expeditedFields')"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="conditional" id="expeditedFields">
+          <div class="conditional-inner">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Urgency Level</label>
+                <select id="expeditedPct" onchange="calcTotal()">
+                  <option value="50" selected>50% — Expedited (within 2 months)</option>
+                  <option value="75">75% — Urgent (within 1 month)</option>
+                  <option value="100">100% — Emergency (within 2 weeks)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Expedited Fee</label>
+                <input type="text" id="expeditedDisplay" readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Student Helpers / Agents</div>
+            <div class="toggle-desc">$11/hr × number of helpers × hours per helper</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="toggleHelpers" onchange="toggleSection('helperFields')"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="conditional" id="helperFields">
+          <div class="conditional-inner">
+            <div class="form-row form-row-3">
+              <div class="form-group">
+                <label>No. of Helpers</label>
+                <input type="number" id="helperCount" value="1" min="1" oninput="calcTotal()">
+              </div>
+              <div class="form-group">
+                <label>Hours / Helper</label>
+                <input type="number" id="helperHours" value="0" min="0" step="0.5" oninput="calcTotal()">
+              </div>
+              <div class="form-group">
+                <label>Helper Cost</label>
+                <input type="text" id="helperCostDisplay" readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">
+          Summary
+          <span id="quoteBadge" class="badge badge-internal">Internal</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div id="summaryLines"></div>
+        <div class="summary-total">
+          <span class="lbl">TOTAL</span>
+          <span class="val" id="summaryTotal">$0.00</span>
+        </div>
+        <div class="tax-note" id="taxNote">Internal: No SP Surcharge or GST.</div>
+      </div>
+
+      <div class="fine-print" id="finePrintSidebar" style="display:none;">
+        * Workmanship calculation is based on total time to produce × student rate ($11.00) [Student Agent involved]
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:12px;justify-content:center;" onclick="showPreview()">Preview Quote →</button>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px;justify-content:center;" onclick="saveAndPrint()">Save & Print PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUOTE LOG PANEL -->
+<div class="panel" id="panel-log">
+  <div style="padding: 22px 28px; max-width: 960px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <div style="font-size:16px;font-weight:800;">Quote Log</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Saved quotations — click to restore</div>
+      </div>
+      <button class="btn btn-danger" onclick="clearLog()">🗑 Clear All</button>
+    </div>
+    <div class="log-filters">
+      <button class="filter-btn active" onclick="filterLog('all', this)">All</button>
+      <button class="filter-btn" onclick="filterLog('internal', this)">Internal</button>
+      <button class="filter-btn" onclick="filterLog('external', this)">External</button>
+    </div>
+    <div id="logList"></div>
+  </div>
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="modal-overlay" id="previewModal" onclick="closePreviewOnBg(event)">
+  <div class="modal-box">
+    <div class="modal-toolbar">
+      <span class="modal-toolbar-title">Quote Preview</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="printDoc()">🖨 Print / Save PDF</button>
+        <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:#444;" onclick="closePreview()">✕ Close</button>
+      </div>
+    </div>
+    <div id="quoteDocContent"></div>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const LOGO_B64 = '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WT9mad+Xo93lk/Zmnfl6NGnCp2wczzvmt7T9Hu8sn7M078vR7vLJ+zNO/L0aNOFTtg5nnfNb2n6Pd5ZP2Zp35ej3eWT9mad+Xo0acKnbBzPO+a3tP0e7yyfszTvy9Hu8sn7M078vRo04VO2Dmed81vafo93lk/Zmnfl6Pd5ZP2Zp35ejRpwqdsHM875re0/R7vLJ+zNO/L0e7yyfszTvy9GjThU7YOZ53zW9p+mAIUAQcgjY+Rpp0aNXZ8yxSlKVFKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSlKUpSg//2Q==';
+
+const PRICES = {
+  acrylic: { A7:{3:1,5:1.5,10:2.5}, A6:{3:2,5:3,10:5}, A5:{3:3.5,5:6,10:10}, A4:{3:7,5:12,10:20}, A3:{3:14,5:24,10:40}, A2:{3:28,5:48,10:80} },
+  plywood: { A7:{3:1,5:1}, A6:{3:1,5:1}, A5:{3:1,5:2}, A4:{3:2,5:2}, A3:{3:3,5:4}, A2:{3:6,5:8} },
+  vinyl: { small:20, medium:45, large:85, xlarge:200 },
+  cardboard_single: { '5':{A0:18,A1:9,A2:5,A3:2}, '10':{A0:20,A1:10,A2:5,A3:3}, '15':{A0:22,A1:11,A2:6,A3:3} },
+  cardboard_double: { '5':{A0:27,A1:14,A2:7,A3:3}, '10':{A0:29,A1:15,A2:7,A3:4}, '15':{A0:31,A1:16,A2:8,A3:4} },
+  gypsum: { round:13, hexagon:13, cube_small:null }
+};
+const MACHINE_RATES = { '3d_printer':5, laser_cutter:40.5, large_format:45, cardboard_cutter:45 };
+const MACHINE_LABELS = { '3d_printer':'3D Printer ($5/hr)', laser_cutter:'Laser Cutter ($40.50/hr)', large_format:'Large Format Printer ($45/hr)', cardboard_cutter:'Cardboard Cutter ($45/hr)' };
+let lineItemCount = 0, accessoryCount = 0;
+let currentLogFilter = 'all';
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date();
+  document.getElementById('quoteDate').value = d.toISOString().split('T')[0];
+  document.getElementById('refNo').value = d.getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
+  addLineItem();
+  addAccessory();
+  calcTotal();
+});
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'log') renderLog();
+}
+
+// ============================================================
+// LINE ITEMS
+// ============================================================
+function addLineItem() {
+  lineItemCount++;
+  const id = lineItemCount;
+  const div = document.createElement('div');
+  div.className = 'line-item';
+  div.id = `li-${id}`;
+  div.innerHTML = `
+    <div class="line-item-header">
+      <span class="line-item-num">Item #${id}</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="line-item-cost" id="li-cost-${id}">$0.00</span>
+        <button class="btn btn-danger" onclick="removeLineItem(${id})">✕ Remove</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Description / Label</label>
+        <input type="text" id="li-desc-${id}" placeholder="e.g. Acrylic name tag" oninput="calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Material Type</label>
+        <select id="li-type-${id}" onchange="onMaterialChange(${id})">
+          <option value="">— Select Material —</option>
+          <option value="acrylic">Acrylic (Laser Cutter)</option>
+          <option value="plywood">Plywood 3/5mm (Laser Cutter)</option>
+          <option value="vinyl">Vinyl (Large Format Printer)</option>
+          <option value="cardboard_single">Cardboard Single Wall</option>
+          <option value="cardboard_double">Cardboard Double Wall</option>
+          <option value="3dprint">3D Print — PLA / PETG</option>
+          <option value="gypsum">Gypsum Powder</option>
+        </select>
+      </div>
+    </div>
+    <div id="li-fields-${id}"></div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label>Machine</label>
+          <select id="li-machine-${id}" onchange="calcTotal()" disabled>
+            <option value="">Select material</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Hours / Item</label>
+          <input type="number" id="li-hrs-${id}" value="0" min="0" step="0.25" oninput="calcTotal()">
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="li-qty-${id}" value="1" min="1" oninput="calcTotal()">
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('lineItems').appendChild(div);
+}
+
+function removeLineItem(id) {
+  const el = document.getElementById(`li-${id}`);
+  if (el) el.remove();
+  calcTotal();
+}
+
+function onMaterialChange(id) {
+  const type = document.getElementById(`li-type-${id}`).value;
+  const fieldsDiv = document.getElementById(`li-fields-${id}`);
+  const machineSelect = document.getElementById(`li-machine-${id}`);
+  machineSelect.disabled = true;
+
+  if (type === 'acrylic') {
+    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2'], [3,5,10]);
+    setMachine(machineSelect, 'laser_cutter');
+  } else if (type === 'plywood') {
+    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2'], [3,5]);
+    setMachine(machineSelect, 'laser_cutter');
+  } else if (type === 'vinyl') {
+    fieldsDiv.innerHTML = `<div class="form-row"><div class="form-group"><label>Tier</label><select id="li-tier-${id}" onchange="calcTotal()">
+      <option value="small">Small — up to 0.3m ($20)</option>
+      <option value="medium">Medium — 0.3m–1m ($45)</option>
+      <option value="large">Large — 1m–2m ($85)</option>
+      <option value="xlarge">Extra Large — 2m–5m ($200)</option>
+    </select></div></div>`;
+    setMachine(machineSelect, 'large_format');
+  } else if (type === 'cardboard_single' || type === 'cardboard_double') {
+    fieldsDiv.innerHTML = `<div class="form-row">
+      <div class="form-group"><label>Thickness</label><select id="li-thick-${id}" onchange="calcTotal()">
+        <option value="5">5mm</option><option value="10">10mm</option><option value="15">15mm</option>
+      </select></div>
+      <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
+        <option value="A0">A0</option><option value="A1">A1</option><option value="A2">A2</option><option value="A3">A3</option>
+      </select></div></div>`;
+    setMachine(machineSelect, 'cardboard_cutter');
+  } else if (type === '3dprint') {
+    fieldsDiv.innerHTML = `<div class="form-row form-row-3">
+      <div class="form-group"><label>Filament</label><select id="li-filament-${id}" onchange="calcTotal()">
+        <option value="PLA">PLA ($25/kg)</option><option value="PETG">PETG ($25/kg)</option>
+      </select></div>
+      <div class="form-group"><label>Weight (grams)</label><input type="number" id="li-grams-${id}" value="0" min="0" oninput="calcTotal()"></div>
+      <div class="form-group"><label>Filament Cost</label><input type="text" id="li-filcost-${id}" readonly></div>
+    </div>`;
+    setMachine(machineSelect, '3d_printer');
+  } else if (type === 'gypsum') {
+    fieldsDiv.innerHTML = `<div class="form-row">
+      <div class="form-group"><label>Shape / Size</label><select id="li-gypsum-shape-${id}" onchange="onGypsumShapeChange(${id}); calcTotal()">
+        <option value="round">Round ($13 each)</option>
+        <option value="hexagon">Hexagon ($13 each)</option>
+        <option value="cube_small">Cube (Small) — Custom price</option>
+        <option value="others">Others &#8212; Custom price</option>
+      </select></div>
+      <div class="form-group"><label>Unit Price ($)</label><input type="number" id="li-gypsum-price-${id}" value="13" min="0" step="0.01" oninput="calcTotal()"></div>
+    </div>`;
+    machineSelect.disabled = true;
+    machineSelect.innerHTML = '<option value="">No machine required</option>';
+  } else {
+    fieldsDiv.innerHTML = '';
+    machineSelect.innerHTML = '<option value="">Select material first</option>';
+  }
+  calcTotal();
+}
+
+function sizeThickFields(id, sizes, thicknesses) {
+  return `<div class="form-row">
+    <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
+      ${sizes.map(s=>`<option>${s}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Thickness</label><select id="li-thick-${id}" onchange="calcTotal()">
+      ${thicknesses.map(t=>`<option value="${t}">${t}mm</option>`).join('')}
+    </select></div>
+  </div>`;
+}
+
+function setMachine(select, value) {
+  select.disabled = false;
+  select.innerHTML = `<option value="${value}">${MACHINE_LABELS[value]}</option>`;
+}
+
+function onGypsumShapeChange(id) {
+  const shape = document.getElementById(`li-gypsum-shape-${id}`)?.value;
+  const priceInput = document.getElementById(`li-gypsum-price-${id}`);
+  if (!priceInput) return;
+  if (shape === 'round' || shape === 'hexagon') {
+    priceInput.value = 13;
+    priceInput.readOnly = false;
+  } else {
+    priceInput.value = '';
+    priceInput.readOnly = false;
+    priceInput.placeholder = 'Enter custom price';
+  }
+}
+
+// ============================================================
+// ACCESSORIES
+// ============================================================
+function addAccessory() {
+  accessoryCount++;
+  const id = accessoryCount;
+  const div = document.createElement('div');
+  div.className = 'acc-row';
+  div.id = `acc-${id}`;
+  div.innerHTML = `
+    <input type="text" placeholder="e.g. M3 screws, paint" id="acc-desc-${id}">
+    <input type="number" placeholder="0.00" id="acc-cost-${id}" min="0" step="0.01" oninput="calcTotal()">
+    <button class="btn btn-danger" onclick="removeAcc(${id})">✕</button>`;
+  document.getElementById('accessories').appendChild(div);
+}
+
+function removeAcc(id) {
+  const el = document.getElementById(`acc-${id}`);
+  if (el) el.remove();
+  calcTotal();
+}
+
+// ============================================================
+// TOGGLES
+// ============================================================
+function toggleSection(fieldId) {
+  const el = document.getElementById(fieldId);
+  const checkId = { designFields:'toggleDesign', helperFields:'toggleHelpers', expeditedFields:'toggleExpedited' }[fieldId];
+  const checked = document.getElementById(checkId)?.checked;
+  if (checked) el.classList.add('show'); else el.classList.remove('show');
+  calcTotal();
+}
+
+function updateQuoteType() {
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const badge = document.getElementById('quoteBadge');
+  badge.className = `badge badge-${type}`;
+  badge.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+  document.getElementById('taxNote').textContent = type === 'internal'
+    ? 'Internal: No SP Surcharge or GST applied.'
+    : 'External: +30% SP Surcharge + 9% GST applied.';
+  calcTotal();
+}
+
+// ============================================================
+// CALC MATERIAL COST
+// ============================================================
+function calcMaterialCost(id) {
+  const type = document.getElementById(`li-type-${id}`)?.value;
+  if (!type) return { mat: 0, machine: 0, hrs: 0, desc: '' };
+
+  const qty = parseInt(document.getElementById(`li-qty-${id}`)?.value || 1);
+  const hrsPerItem = parseFloat(document.getElementById(`li-hrs-${id}`)?.value || 0);
+  const totalHrs = hrsPerItem * qty;
+  const machine = document.getElementById(`li-machine-${id}`)?.value;
+  const machineCost = totalHrs * (MACHINE_RATES[machine] || 0);
+  let matPerItem = 0, descDetail = type;
+
+  if (type === 'acrylic' || type === 'plywood') {
+    const size = document.getElementById(`li-size-${id}`)?.value || 'A4';
+    const thick = document.getElementById(`li-thick-${id}`)?.value || '3';
+    matPerItem = PRICES[type]?.[size]?.[parseInt(thick)] || 0;
+    descDetail = `${type} · ${size} · ${thick}mm`;
+  } else if (type === 'vinyl') {
+    const tier = document.getElementById(`li-tier-${id}`)?.value || 'small';
+    matPerItem = PRICES.vinyl[tier] || 0;
+    descDetail = `vinyl · ${tier}`;
+  } else if (type === 'cardboard_single' || type === 'cardboard_double') {
+    const pt = type === 'cardboard_single' ? PRICES.cardboard_single : PRICES.cardboard_double;
+    const thick = document.getElementById(`li-thick-${id}`)?.value || '5';
+    const size = document.getElementById(`li-size-${id}`)?.value || 'A1';
+    matPerItem = pt[thick]?.[size] || 0;
+    descDetail = `${type.replace('_',' ')} · ${thick}mm · ${size}`;
+  } else if (type === '3dprint') {
+    const g = parseFloat(document.getElementById(`li-grams-${id}`)?.value || 0);
+    matPerItem = (g / 1000) * 25;
+    const fil = document.getElementById(`li-filament-${id}`)?.value || 'PLA';
+    descDetail = `3D Print · ${fil} · ${g}g`;
+    const fc = document.getElementById(`li-filcost-${id}`);
+    if (fc) fc.value = '$' + matPerItem.toFixed(2);
+  } else if (type === 'gypsum') {
+    const shape = document.getElementById(`li-gypsum-shape-${id}`)?.value || 'round';
+    matPerItem = parseFloat(document.getElementById(`li-gypsum-price-${id}`)?.value || 0);
+    const shapeLabel = { round:'Round', hexagon:'Hexagon', cube_small:'Cube (Small)', others:'Others' }[shape] || shape;
+    descDetail = `Gypsum Powder · ${shapeLabel}`;
+  }
+
+  return { mat: matPerItem * qty, machine: machineCost, hrs: totalHrs, descDetail };
+}
+
+// ============================================================
+// CALC TOTAL
+// ============================================================
+function calcTotal() {
+  const isExternal = document.querySelector('input[name="quoteType"]:checked').value === 'external';
+  let totalMat = 0, totalMachine = 0, totalHrs = 0;
+
+  document.querySelectorAll('.line-item').forEach(item => {
+    const id = item.id.replace('li-','');
+    const r = calcMaterialCost(id);
+    totalMat += r.mat; totalMachine += r.machine; totalHrs += r.hrs;
+    const el = document.getElementById(`li-cost-${id}`);
+    if (el) el.textContent = '$' + (r.mat + r.machine).toFixed(2);
+  });
+
+  let accTotal = 0;
+  document.querySelectorAll('[id^="acc-cost-"]').forEach(el => { accTotal += parseFloat(el.value)||0; });
+
+  let subtotal = totalMat + totalMachine + accTotal;
+  const helpersOn = document.getElementById('toggleHelpers').checked;
+  let helperCost = 0;
+  if (helpersOn) {
+    const count = parseInt(document.getElementById('helperCount')?.value||1);
+    const hrs = parseFloat(document.getElementById('helperHours')?.value||0);
+    helperCost = count * hrs * 11;
+    const hcd = document.getElementById('helperCostDisplay');
+    if (hcd) hcd.value = '$' + helperCost.toFixed(2);
+  }
+  subtotal += helperCost;
+
+  const expedited = document.getElementById('toggleExpedited').checked;
+  const expeditedPct = parseFloat(document.getElementById('expeditedPct')?.value||50) / 100;
+  const expeditedFee = expedited ? (totalMat + totalMachine) * expeditedPct : 0;
+  const expPctLabel = document.getElementById('expeditedPct')?.value || '50';
+  if (expedited) { const ed = document.getElementById('expeditedDisplay'); if(ed) ed.value = '$' + expeditedFee.toFixed(2); }
+  subtotal += expeditedFee;
+
+  const designOn = document.getElementById('toggleDesign').checked;
+  let designFee = 0;
+  if (designOn) {
+    const mode = document.getElementById('designMode')?.value;
+    const val = parseFloat(document.getElementById('designValue')?.value||20);
+    designFee = mode === 'percent' ? (totalMat + totalMachine) * (val/100) : val;
+  }
+  subtotal += designFee;
+
+  let tieFee = 0, gst = 0, grand = subtotal;
+  let costExclGST = subtotal, costInclGST = subtotal;
+  if (isExternal) { tieFee = subtotal * 0.3; costExclGST = subtotal + tieFee; gst = costExclGST * 0.09; costInclGST = costExclGST + gst; grand = costInclGST; }
+
+  // summary
+  const lines = [];
+  if (totalMat > 0) lines.push(['Material Cost', totalMat]);
+  if (totalMachine > 0) lines.push(['Machine Cost', totalMachine]);
+  if (accTotal > 0) lines.push(['Accessories', accTotal]);
+  if (helperCost > 0) lines.push(['Student Helpers', helperCost]);
+  if (expeditedFee > 0) lines.push([`Expedited (${expPctLabel}%)`, expeditedFee]);
+  if (designFee > 0) lines.push(['Design Fee', designFee]);
+  if (tieFee > 0) lines.push(['SP Surcharge (30%)', tieFee]);
+  if (isExternal && costExclGST > 0) lines.push(['Total (excl. GST)', costExclGST]);
+  if (gst > 0) lines.push(['GST (9%)', gst]);
+
+  document.getElementById('summaryLines').innerHTML = lines.map(([l,v])=>
+    `<div class="summary-line"><span class="lbl">${l}</span><span class="val">$${v.toFixed(2)}</span></div>`
+  ).join('') || `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
+  document.getElementById('summaryTotal').textContent = '$' + grand.toFixed(2);
+
+  const fpEl = document.getElementById('finePrintSidebar');
+  fpEl.style.display = helpersOn ? 'block' : 'none';
+
+  window.__qd = { totalMat, totalMachine, accTotal, helperCost, expeditedFee, expPctLabel, designFee, tieFee, gst, costExclGST, subtotal, grand, isExternal, totalHrs };
+}
+
+// ============================================================
+// DATE FORMAT
+// ============================================================
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = new Date(dateStr);
+  return `${String(d.getUTCDate()).padStart(2,'0')}-${months[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
+}
+
+// ============================================================
+// BUILD QUOTE DOC HTML
+// ============================================================
+function buildQuoteDoc() {
+  calcTotal();
+  const d = window.__qd || {};
+  const clientName = document.getElementById('clientName').value || '—';
+  const jobTitle = document.getElementById('jobTitle').value || '—';
+  const refNo = 'SP-TTC/' + (document.getElementById('refNo').value || '');
+  const dateRaw = document.getElementById('quoteDate').value;
+  const dateStr = formatDate(dateRaw);
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const isExternal = type === 'external';
+  const docTitle = isExternal ? 'Preliminary Quotation' : 'Internal Project Quotation';
+  const helpersOn = document.getElementById('toggleHelpers').checked;
+
+  // Table rows
+  let rows = '';
+  document.querySelectorAll('.line-item').forEach(item => {
+    const id = item.id.replace('li-','');
+    const desc = document.getElementById(`li-desc-${id}`)?.value || 'Item';
+    const qty = document.getElementById(`li-qty-${id}`)?.value || 1;
+    const hrs = document.getElementById(`li-hrs-${id}`)?.value || 0;
+    const machine = document.getElementById(`li-machine-${id}`)?.value || '';
+    const mLabel = { laser_cutter:'Laser Cutter', large_format:'Large Format Printer', '3d_printer':'3D Printer', cardboard_cutter:'Cardboard Cutter' }[machine] || '';
+    const r = calcMaterialCost(id);
+    const itemTotal = r.mat + r.machine;
+    rows += `<tr>
+      <td>${desc}<div class="qdoc-desc-detail">${r.descDetail}${mLabel ? ' · ' + mLabel : ''}${hrs>0?' · '+hrs+'hr×'+qty:''}</div></td>
+      <td style="text-align:center">${qty}</td>
+      <td class="r">$${r.mat.toFixed(2)}</td>
+      <td class="r">$${r.machine.toFixed(2)}</td>
+      <td class="r">$${itemTotal.toFixed(2)}</td>
+    </tr>`;
+  });
+
+  document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
+    const id = el.id.replace('acc-desc-','');
+    const cost = parseFloat(document.getElementById(`acc-cost-${id}`)?.value||0);
+    if (el.value || cost > 0) {
+      rows += `<tr><td>${el.value||'Accessory'}<div class="qdoc-desc-detail">Accessory / Consumable</div></td><td style="text-align:center">1</td><td class="r">$${cost.toFixed(2)}</td><td class="r">$0.00</td><td class="r">$${cost.toFixed(2)}</td></tr>`;
+    }
+  });
+
+  // Totals block
+  const totalRows = [
+    d.helperCost > 0 ? ['Student Helpers / Agent', d.helperCost] : null,
+    d.expeditedFee > 0 ? [`Expedited Work (${d.expPctLabel||50}%)`, d.expeditedFee] : null,
+    d.designFee > 0 ? ['Design Fee', d.designFee] : null,
+    ['Subtotal', d.subtotal],
+    d.tieFee > 0 ? ['SP Surcharge (30%)', d.tieFee] : null,
+    (d.isExternal && d.costExclGST > 0) ? ['Total (excl. GST)', d.costExclGST] : null,
+    d.gst > 0 ? ['GST (9%)', d.gst] : null,
+  ].filter(Boolean).map(([l,v])=>`<div class="qdoc-total-row"><span>${l}</span><span class="amt">$${v.toFixed(2)}</span></div>`).join('');
+
+  // Internal vires table
+  const viresBlock = !isExternal ? `
+    <div class="qdoc-vires">
+      <div class="qdoc-vires-title">Internal Vires — Charging Details</div>
+      <table class="qdoc-vires-table">
+        <tr><td>Fund</td><td>SPO_DCG0001 SPO General Fund</td></tr>
+        <tr><td>Cost Centre</td><td>AQR: SPO_CC0024</td></tr>
+        <tr><td>Ledger Account</td><td>284100: Student-related Expenses</td></tr>
+        <tr><td>Spend Category</td><td>284104SC Student Local Programmes and Activities</td></tr>
+        <tr><td>Program ID</td><td>No Program ID for General Fund</td></tr>
+        <tr><td>Memo</td><td>Nil</td></tr>
+      </table>
+    </div>` : '';
+
+  // Fine print
+  const finePrint = helpersOn ? `<div class="qdoc-fineprint">* Workmanship calculation is based on total time to produce × student rate ($11.00) [Student Agent involved]</div>` : '';
+
+  return `<div class="quote-doc">
+    <div class="qdoc-header">
+      <div class="qdoc-logo-block">
+        <img src="data:image/jpeg;base64,${LOGO_B64}" alt="SP FabLab Logo" style="height:50px;">
+        <div class="qdoc-address">Department of Academy Quality & Resources<br>Fablab<br>500 Dover Road, S13651</div>
+      </div>
+      <div class="qdoc-title-block">
+        <div class="qdoc-doc-title">${docTitle}</div>
+        <div class="qdoc-ref">
+          <strong>Project Ref No:</strong> ${refNo}<br>
+          <strong>Date:</strong> ${dateStr}<br>
+          <span class="qdoc-type-badge ${type}">${type.toUpperCase()}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="qdoc-client">
+      <div class="qdoc-client-section">
+        <h4>Client</h4>
+        <p>${clientName}</p>
+      </div>
+      <div class="qdoc-client-section">
+        <h4>Job Title</h4>
+        <p>${jobTitle}</p>
+      </div>
+    </div>
+
+    <table class="qdoc-table">
+      <thead><tr>
+        <th>Description</th>
+        <th style="text-align:center">Qty</th>
+        <th class="r">Material</th>
+        <th class="r">Machine</th>
+        <th class="r">Item Total</th>
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px;">No items added</td></tr>'}</tbody>
+    </table>
+
+    <div class="qdoc-totals-wrap">
+      <div class="qdoc-totals">
+        ${totalRows}
+        <div class="qdoc-total-row grand">
+          <span>TOTAL (SGD)</span>
+          <span class="amt">$${d.grand?.toFixed(2)||'0.00'}</span>
+        </div>
+      </div>
+    </div>
+
+    ${finePrint}
+    ${viresBlock}
+
+    <div class="qdoc-footer">
+      This quotation is valid for 30 days from the date of issue. All amounts in Singapore Dollars (SGD).<br>
+      ${isExternal ? 'Prices inclusive of SP Surcharge (30%) and GST (9%).' : 'Internal pricing — SP Surcharge and GST are not applicable for internal vires.'}<br>
+      SP FabLab · Department of Academy Quality & Resources · 500 Dover Road, S13651
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// PREVIEW
+// ============================================================
+function showPreview() {
+  document.getElementById('quoteDocContent').innerHTML = buildQuoteDoc();
+  document.getElementById('previewModal').classList.add('show');
+}
+function closePreview() { document.getElementById('previewModal').classList.remove('show'); }
+function closePreviewOnBg(e) { if (e.target.id === 'previewModal') closePreview(); }
+
+// ============================================================
+// PRINT
+// ============================================================
+function printDoc() {
+  const content = document.getElementById('quoteDocContent').innerHTML;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Quotation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Nunito','Segoe UI',Arial,sans-serif;background:#fff;color:#1a1d23;font-size:13px;}
+      .quote-doc{padding:36px 44px;}
+      .qdoc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid #1a1d23;}
+      .qdoc-address{font-size:11px;color:#555;margin-top:6px;line-height:1.7;}
+      .qdoc-doc-title{font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;}
+      .qdoc-title-block{text-align:right;}
+      .qdoc-ref{font-size:11px;color:#666;margin-top:6px;line-height:1.8;}
+      .qdoc-ref strong{color:#1a1d23;font-weight:700;}
+      .qdoc-type-badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+      .qdoc-type-badge.internal{background:#dbeafe;color:#1d4ed8;}
+      .qdoc-type-badge.external{background:#fef3c7;color:#b45309;}
+      .qdoc-client{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;padding:12px 14px;background:#f8f9fa;border-radius:6px;border:1px solid #e5e7eb;}
+      .qdoc-client-section h4{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-bottom:4px;}
+      .qdoc-client-section p{font-size:13px;font-weight:700;}
+      .qdoc-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px;}
+      .qdoc-table th{background:#1a1d23;color:#fff;padding:8px 10px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;}
+      .qdoc-table th.r{text-align:right;}
+      .qdoc-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top;}
+      .qdoc-table td.r{text-align:right;font-weight:600;}
+      .qdoc-table tr:nth-child(even) td{background:#fafafa;}
+      .qdoc-desc-detail{font-size:9px;color:#888;margin-top:1px;}
+      .qdoc-totals-wrap{display:flex;justify-content:flex-end;}
+      .qdoc-totals{width:260px;font-size:11px;}
+      .qdoc-total-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #eee;}
+      .qdoc-total-row.grand{background:#1a1d23;color:#fff;padding:9px 11px;border-radius:5px;margin-top:6px;font-weight:800;font-size:13px;border:none;}
+      .amt{font-weight:700;}
+      .qdoc-vires{margin-top:20px;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;}
+      .qdoc-vires-title{background:#1a1d23;color:#fff;padding:7px 12px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+      .qdoc-vires-table{width:100%;border-collapse:collapse;font-size:10px;}
+      .qdoc-vires-table td{padding:6px 12px;border-bottom:1px solid #f0f0f0;}
+      .qdoc-vires-table td:first-child{font-weight:700;color:#555;width:160px;background:#f8f9fa;}
+      .qdoc-vires-table tr:last-child td{border-bottom:none;}
+      .qdoc-fineprint{margin-top:14px;padding:8px 12px;background:#fffbeb;border:1px solid #fcd34d;border-radius:5px;font-size:9px;color:#78350f;}
+      .qdoc-footer{margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;text-align:center;line-height:1.6;}
+    </style></head><body>${content}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 700);
+}
+
+// ============================================================
+// SAVE & PRINT
+// ============================================================
+function collectItems() {
+  const items = [];
+  document.querySelectorAll('.line-item').forEach(li => {
+    const id = li.id.replace('li-','');
+    const desc = document.getElementById(`li-desc-${id}`)?.value || '';
+    const qty = document.getElementById(`li-qty-${id}`)?.value || '1';
+    const r = calcMaterialCost(id);
+    if (desc || r.mat > 0) {
+      items.push({ desc, qty, detail: r.descDetail });
+    }
+  });
+  document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
+    const id = el.id.replace('acc-desc-','');
+    const cost = parseFloat(document.getElementById(`acc-cost-${id}`)?.value||0);
+    if (el.value || cost > 0) {
+      items.push({ desc: el.value || 'Accessory', qty: '1', detail: 'Accessory / Consumable' });
+    }
+  });
+  return items;
+}
+
+function saveAndPrint() {
+  showPreview();
+  const d = window.__qd || {};
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const entry = {
+    id: Date.now(),
+    type,
+    client: document.getElementById('clientName').value || 'Unknown',
+    jobTitle: document.getElementById('jobTitle').value || '—',
+    refNo: 'SP-TTC/' + (document.getElementById('refNo').value || ''),
+    date: document.getElementById('quoteDate').value,
+    total: d.grand || 0,
+    items: collectItems(),
+    snapshot: buildQuoteDoc(),
+    saved: new Date().toISOString()
+  };
+  saveToLog(entry);
+  setTimeout(printDoc, 300);
+  notify('Quote saved to log ✓');
+}
+
+// ============================================================
+// STORAGE / LOG
+// ============================================================
+function saveToLog(entry) {
+  try { localStorage.setItem(`quote:${entry.id}`, JSON.stringify(entry)); }
+  catch(e) { console.log('Storage error:', e); }
+}
+
+function getLog() {
+  try {
+    const entries = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('quote:')) {
+        try { entries.push(JSON.parse(localStorage.getItem(key))); } catch(e) {}
+      }
+    }
+    return entries.sort((a,b) => b.id - a.id);
+  } catch(e) { return []; }
+}
+
+function renderLog() {
+  const container = document.getElementById('logList');
+  const entries = getLog();
+  const filtered = currentLogFilter === 'all' ? entries : entries.filter(e => e.type === currentLogFilter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="log-empty">
+      <div style="font-size:32px;margin-bottom:8px;">📁</div>
+      <div style="font-weight:700;">No ${currentLogFilter === 'all' ? '' : currentLogFilter + ' '}quotes saved yet.</div>
+      <div style="margin-top:4px;">Build a quote and click "Save & Print" to log it here.</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(e => `
+    <div class="log-item">
+      <div class="log-item-header">
+        <div>
+          <div class="log-item-title">${e.client} — ${e.jobTitle}</div>
+          <div class="log-item-meta">${e.refNo} · ${formatDate(e.date)} · <span class="badge badge-${e.type}">${e.type}</span></div>
+          <div class="log-item-meta" style="margin-top:2px;">Saved: ${new Date(e.saved).toLocaleString()}</div>
+        </div>
+        <div class="log-item-total">$${e.total.toFixed(2)}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+        <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;">⎙ View Quote</button>
+        <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;">📦 Delivery Order</button>
+      </div>
+    </div>`).join('');
+}
+
+function restoreAndPreview(id) {
+  try {
+    const raw = localStorage.getItem(`quote:${id}`);
+    if (!raw) return;
+    const entry = JSON.parse(raw);
+    document.getElementById('quoteDocContent').innerHTML = entry.snapshot;
+    document.getElementById('previewModal').classList.add('show');
+  } catch(e) { notify('Could not load quote.'); }
+}
+
+function generateDO(id) {
+  try {
+    const raw = localStorage.getItem('quote:' + id);
+    if (!raw) { notify('Quote not found.'); return; }
+    const entry = JSON.parse(raw);
+
+    // Use stored items array; fall back gracefully for older entries
+    let doItems = (entry.items && entry.items.length) ? entry.items : [];
+    if (!doItems.length && entry.snapshot) {
+      try {
+        const parser = new DOMParser();
+        const sdoc = parser.parseFromString(entry.snapshot, 'text/html');
+        sdoc.querySelectorAll('.qdoc-table tbody tr').forEach(function(row) {
+          const cells = row.querySelectorAll('td');
+          if (!cells.length) return;
+          const mainDesc = (cells[0].childNodes[0] && cells[0].childNodes[0].textContent) ? cells[0].childNodes[0].textContent.trim() : '';
+          const detailEl = cells[0].querySelector('.qdoc-desc-detail');
+          const detail = detailEl ? detailEl.textContent.trim() : '';
+          const qty = cells[1] ? cells[1].textContent.trim() : '1';
+          if (mainDesc) doItems.push({ desc: mainDesc, qty: qty, detail: detail });
+        });
+      } catch(pe) { console.warn('Snapshot parse fallback failed', pe); }
+    }
+
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+    const doDate = String(now.getDate()).padStart(2,'0') + '-' + months[now.getMonth()] + '-' + now.getFullYear();
+    const doNum = 'DO-' + entry.refNo.replace('SP-TTC/','') + '-' + String(now.getTime()).slice(-4);
+
+    let itemNum = 1;
+    let itemRowsHtml = '';
+    if (doItems.length === 0) {
+      itemRowsHtml = '<tr><td colspan="4" style="padding:20px;text-align:center;color:#aaa;">No items recorded</td></tr>';
+    } else {
+      doItems.forEach(function(item) {
+        const detailHtml = item.detail ? '<div style="font-size:10px;color:#999;margin-top:2px;">' + item.detail + '</div>' : '';
+        itemRowsHtml += '<tr>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid #eee;text-align:center;color:#888;">' + (itemNum++) + '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid #eee;">' + item.desc + detailHtml + '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid #eee;text-align:center;font-weight:700;">' + item.qty + '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid #eee;"></td>' +
+          '</tr>';
+      });
+    }
+
+    const doHtmlParts = [
+      '<!DOCTYPE html><html><head>',
+      '<meta charset="UTF-8">',
+      '<title>Delivery Order - ' + doNum + '</title>',
+      '<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">',
+      '<style>',
+      '*{box-sizing:border-box;margin:0;padding:0;}',
+      'body{font-family:"Nunito","Segoe UI",Arial,sans-serif;background:#fff;color:#1a1d23;font-size:13px;padding:44px 52px;}',
+      '.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2.5px solid #1a1d23;}',
+      '.brand{font-size:24px;font-weight:800;letter-spacing:-0.5px;}',
+      '.brand span{color:#c0392b;}',
+      '.addr{font-size:11px;color:#555;margin-top:5px;line-height:1.75;}',
+      '.doc-title{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:right;}',
+      '.doc-meta{text-align:right;font-size:11px;color:#555;margin-top:8px;line-height:2.1;}',
+      '.doc-meta b{color:#1a1d23;font-size:12px;}',
+      '.client-block{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px;padding:14px 16px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:6px;}',
+      '.client-block h4{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-bottom:5px;}',
+      '.client-block p{font-size:14px;font-weight:700;}',
+      '.notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:5px;padding:10px 14px;font-size:11px;color:#78350f;margin-bottom:18px;line-height:1.5;}',
+      'table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:32px;}',
+      'thead tr{background:#1a1d23;}',
+      'th{color:#fff;padding:10px;text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;}',
+      'td{vertical-align:top;}',
+      '.sig-wrap{border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;}',
+      '.sig-hdr{background:#1a1d23;color:#fff;padding:9px 16px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}',
+      '.sig-body{padding:20px 16px;}',
+      '.sig-stmt{font-size:12px;color:#444;line-height:1.6;margin-bottom:40px;}',
+      '.sig-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;}',
+      '.sig-field{border-top:1.5px solid #1a1d23;padding-top:8px;}',
+      '.sig-field-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;margin-top:6px;}',
+      '.footer{margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;font-size:9px;color:#aaa;text-align:center;line-height:1.7;}',
+      '@media print{body{padding:28px 36px;}}',
+      '</style></head><body>',
+      '<div class="hdr">',
+      '  <div>',
+      '    <div class="brand"><span>SP</span> FabLab</div>',
+      '    <div class="addr">Department of Academy Quality &amp; Resources<br>Fablab &middot; 500 Dover Road, S13651</div>',
+      '  </div>',
+      '  <div>',
+      '    <div class="doc-title">Delivery Order</div>',
+      '    <div class="doc-meta">',
+      '      <b>DO No:</b> ' + doNum + '<br>',
+      '      <b>Quote Ref:</b> ' + entry.refNo + '<br>',
+      '      <b>Date:</b> ' + doDate,
+      '    </div>',
+      '  </div>',
+      '</div>',
+      '<div class="client-block">',
+      '  <div><h4>Deliver To</h4><p>' + entry.client + '</p></div>',
+      '  <div><h4>Job Title</h4><p>' + entry.jobTitle + '</p></div>',
+      '</div>',
+      '<div class="notice">&#9888; Please inspect all items carefully upon collection. Report any discrepancies or damage to FabLab staff <b>before signing</b> this Delivery Order.</div>',
+      '<table>',
+      '  <thead><tr>',
+      '    <th style="width:36px;text-align:center;">#</th>',
+      '    <th>Item Description</th>',
+      '    <th style="width:60px;text-align:center;">Qty</th>',
+      '    <th style="width:110px;text-align:center;">Condition Checked</th>',
+      '  </tr></thead>',
+      '  <tbody>' + itemRowsHtml + '</tbody>',
+      '</table>',
+      '<div class="sig-wrap">',
+      '  <div class="sig-hdr">Acknowledgement of Receipt</div>',
+      '  <div class="sig-body">',
+      '    <div class="sig-stmt">I, the undersigned, confirm that I have received all items listed in this Delivery Order in good order and condition, unless otherwise stated.</div>',
+      '    <div class="sig-fields">',
+      '      <div class="sig-field"><div style="height:50px;"></div><div class="sig-field-lbl">Full Name</div></div>',
+      '      <div class="sig-field"><div style="height:50px;"></div><div class="sig-field-lbl">Signature</div></div>',
+      '      <div class="sig-field"><div style="height:50px;"></div><div class="sig-field-lbl">Date Received</div></div>',
+      '    </div>',
+      '  </div>',
+      '</div>',
+      '<div class="footer">',
+      '  SP FabLab &middot; Department of Academy Quality &amp; Resources &middot; 500 Dover Road, S13651<br>',
+      '  DO No: ' + doNum + ' &middot; Quote Ref: ' + entry.refNo + ' &middot; Printed: ' + doDate,
+      '</div>',
+      '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},800);});<\/script>',
+      '</body></html>'
+    ];
+
+    const doHTML = doHtmlParts.join('\n');
+    const blob = new Blob([doHTML], {type: 'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) {
+      notify('Pop-ups blocked — please allow pop-ups for this page and try again.');
+    } else {
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 15000);
+    }
+  } catch(e) {
+    notify('Could not generate Delivery Order.');
+    console.error('generateDO error:', e);
+  }
+}
+
+
+function clearLog()lear all saved quotes? This cannot be undone.')) return;
+  try {
+    const toRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('quote:')) toRemove.push(key);
+    }
+    toRemove.forEach(k => localStorage.removeItem(k));
+    notify('Log cleared.');
+    renderLog();
+  } catch(e) { notify('Error clearing log.'); }
+}
+
+function filterLog(type, el) {
+  currentLogFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderLog();
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function resetForm() {
+  if (!confirm('Reset all fields? Saved quotes in the log will be kept.')) return;
+  document.getElementById('lineItems').innerHTML = '';
+  document.getElementById('accessories').innerHTML = '';
+  lineItemCount = 0; accessoryCount = 0;
+  document.getElementById('clientName').value = '';
+  document.getElementById('jobTitle').value = '';
+  document.getElementById('toggleDesign').checked = false;
+  document.getElementById('toggleExpedited').checked = false;
+  document.getElementById('expeditedFields').classList.remove('show');
+  document.getElementById('toggleHelpers').checked = false;
+  document.getElementById('designFields').classList.remove('show');
+  document.getElementById('helperFields').classList.remove('show');
+  document.querySelector('input[name="quoteType"][value="internal"]').checked = true;
+  updateQuoteType();
+  addLineItem();
+  addAccessory();
+  calcTotal();
+}
+
+// ============================================================
+// NOTIFY
+// ============================================================
+function notify(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
