@@ -26,6 +26,145 @@
     --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
     --font: 'Nunito', 'Aptos', 'Segoe UI', Arial, sans-serif;
   }
+  /* DARK MODE — applied via [data-theme="dark"] on <html> */
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --surface: #1a1d23;
+    --surface2: #22262f;
+    --border: #2e3340;
+    --accent: #e05c4e;
+    --accent-dark: #c0392b;
+    --accent-light: #2a1a19;
+    --blue: #4d8ef0;
+    --text: #e8eaf0;
+    --text-muted: #9ca3af;
+    --text-light: #6b7280;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  [data-theme="dark"] body { background: var(--bg); color: var(--text); }
+
+  /* Inputs, selects, textareas */
+  [data-theme="dark"] input,
+  [data-theme="dark"] select,
+  [data-theme="dark"] textarea {
+    background: var(--surface2) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+  [data-theme="dark"] input[readonly],
+  [data-theme="dark"] input[type="text"][readonly] {
+    background: #181b22 !important;
+    color: var(--text-muted) !important;
+  }
+  [data-theme="dark"] select option { background: #22262f; color: var(--text); }
+
+  /* Layout panels */
+  [data-theme="dark"] .main { background: var(--bg) !important; }
+  [data-theme="dark"] .main.type-internal { background: #111927 !important; }
+  [data-theme="dark"] .main.type-external { background: #1a1508 !important; }
+  [data-theme="dark"] .main.type-workshop { background: #0d1a11 !important; }
+  [data-theme="dark"] .section { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .sidebar { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .tabs { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .header { background: var(--surface) !important; border-color: var(--border) !important; }
+
+  /* Line items & accessories */
+  [data-theme="dark"] .line-item { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .line-item:hover { border-color: #4a5060 !important; }
+
+  /* Toggles & conditionals */
+  [data-theme="dark"] .toggle-row { border-color: var(--border) !important; }
+  [data-theme="dark"] .conditional-inner { background: var(--surface2) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .toggle-slider { background: #374151 !important; }
+
+  /* Buttons */
+  [data-theme="dark"] .btn-ghost { color: var(--text-muted) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .btn-ghost:hover { color: var(--text) !important; }
+  [data-theme="dark"] .btn-secondary { background: var(--surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .btn-danger:hover { background: #2a1010 !important; }
+  /* Log action buttons with inline green/blue styles */
+  [data-theme="dark"] .btn[style*="background:#f0fdf4"] { background: #0d2010 !important; border-color: #166534 !important; color: #86efac !important; }
+  [data-theme="dark"] .btn[style*="background:#eff6ff"] { background: #0d1a30 !important; border-color: #1e40af !important; color: #93c5fd !important; }
+
+  /* Modal */
+  [data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.75) !important; }
+  [data-theme="dark"] .modal-box { background: var(--surface) !important; border: 1px solid var(--border) !important; }
+  [data-theme="dark"] .modal-header { background: var(--surface2) !important; border-color: var(--border) !important; }
+
+  /* Quote log */
+  [data-theme="dark"] .log-entry { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .log-entry:hover { border-color: var(--accent) !important; }
+  [data-theme="dark"] .log-item-meta { color: var(--text-muted) !important; }
+  [data-theme="dark"] .log-filters { border-color: var(--border) !important; }
+
+  /* FY Summary sidebar */
+  [data-theme="dark"] .fy-sidebar { background: var(--surface2) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .fy-sidebar * { border-color: var(--border) !important; }
+
+  /* Summary sidebar rows */
+  [data-theme="dark"] .summary-row { border-color: var(--border) !important; }
+  [data-theme="dark"] .summary-section { color: var(--text-muted) !important; }
+
+  /* Badges */
+  [data-theme="dark"] .badge-internal { background: #1e3a5f !important; color: #93c5fd !important; }
+  [data-theme="dark"] .badge-external { background: #3a2a00 !important; color: #fcd34d !important; }
+  [data-theme="dark"] .badge-workshop { background: #0f2a15 !important; color: #86efac !important; }
+
+  /* Workshop items & date mode buttons */
+  [data-theme="dark"] .wi-row { background: #0d2010 !important; border-color: #166534 !important; }
+  [data-theme="dark"] .wi-btn.used { background: #22262f !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .date-mode-btn { background: var(--surface2) !important; border-color: var(--border) !important; color: var(--text-muted) !important; }
+  [data-theme="dark"] .date-mode-btn.active { background: #1e3a5f !important; border-color: #4d8ef0 !important; color: #93c5fd !important; }
+
+  /* Editing banner */
+  [data-theme="dark"] #editingBanner { background: #2a2010 !important; border-color: #92400e !important; }
+
+  /* Notification */
+  [data-theme="dark"] #notif { background: #0d2010 !important; color: #86efac !important; border-color: #166534 !important; }
+
+  /* Inline coloured boxes (course fee, TIE note, workshop dates, etc.) */
+  /* Green boxes — course fee, workshop sections */
+  [data-theme="dark"] [style*="background:#f0fdf4"] { background: #0d2010 !important; border-color: #166534 !important; }
+  [data-theme="dark"] [style*="background: #f0fdf4"] { background: #0d2010 !important; border-color: #166534 !important; }
+  /* Yellow boxes — TIE note, expedited, editing warning */
+  [data-theme="dark"] [style*="background:#fef9c3"] { background: #1f1800 !important; border-color: #854d0e !important; }
+  [data-theme="dark"] [style*="background: #fef9c3"] { background: #1f1800 !important; border-color: #854d0e !important; }
+  [data-theme="dark"] [style*="background:#fef3c7"] { background: #1f1800 !important; border-color: #92400e !important; }
+  [data-theme="dark"] [style*="background:#fffbeb"] { background: #1f1800 !important; border-color: #92400e !important; }
+  /* Blue boxes — internal type tint */
+  [data-theme="dark"] [style*="background:#eff6ff"] { background: #0d1a30 !important; border-color: #1e40af !important; }
+  [data-theme="dark"] [style*="background:#dbeafe"] { background: #0d1a30 !important; border-color: #1e40af !important; }
+
+  /* Materials & Rates — row cards */
+  [data-theme="dark"] [style*="background:#f9fafb"] { background: var(--surface2) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] [style*="background: #f9fafb"] { background: var(--surface2) !important; border-color: var(--border) !important; }
+  /* Table header cells in rates panel */
+  [data-theme="dark"] [style*="background:#f3f4f6"] { background: #2a2f3a !important; border-color: var(--border) !important; color: var(--text-muted) !important; }
+  [data-theme="dark"] [style*="background: #f3f4f6"] { background: #2a2f3a !important; border-color: var(--border) !important; color: var(--text-muted) !important; }
+
+  /* Download FY CSV button */
+  [data-theme="dark"] [style*="background:#f0fdf4"][style*="border:1px solid #86efac"] { background: #0d2010 !important; border-color: #166534 !important; color: #86efac !important; }
+
+  /* Tab active/hover */
+  [data-theme="dark"] .tab { color: var(--text-muted) !important; }
+  [data-theme="dark"] .tab:hover { color: var(--text) !important; }
+  [data-theme="dark"] .tab.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+
+  /* Section title icon */
+  [data-theme="dark"] .section-title-icon { background: var(--accent-light) !important; }
+
+  /* Add item buttons */
+  [data-theme="dark"] .add-item-btn { background: var(--surface2) !important; border-color: var(--border) !important; color: var(--text-muted) !important; }
+  [data-theme="dark"] .add-item-btn:hover { border-color: var(--accent) !important; color: var(--accent) !important; }
+  [data-theme="dark"] .wi-btn:not(.used) { border-color: #166534 !important; color: #86efac !important; background: #0d2010 !important; }
+
+  /* Readonly inputs in line items (filament cost, colour surcharge, etc.) */
+  [data-theme="dark"] .line-item input[readonly] { background: #181b22 !important; }
+
+  /* Print: always light */
+  @media print { [data-theme="dark"] body { background: #fff !important; color: #000 !important; } }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; }
 
@@ -460,6 +599,7 @@
     <div class="header-subtitle">SP · Department of Academic Quality & Resources</div>
   </div>
   <div class="header-actions">
+    <button class="btn btn-ghost btn-sm" id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark / light mode" style="font-size:16px;padding:4px 10px;">🌙</button>
     <button class="btn btn-ghost btn-sm" onclick="resetForm()">↺ Reset</button>
     <button class="btn btn-secondary btn-sm" onclick="showPreview()">⎙ Preview</button>
     <button id="headerSaveBtn" class="btn btn-primary btn-sm" onclick="saveQuote()">💾 Save</button>
@@ -966,6 +1106,27 @@
 
 <script>
 // ============================================================
+// DARK MODE
+// ============================================================
+function toggleDarkMode() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setDarkMode(!isDark);
+}
+
+function setDarkMode(dark) {
+  const btn = document.getElementById('darkModeToggle');
+  if (dark) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    if (btn) btn.textContent = '☀️';
+    localStorage.setItem('fablab_theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    if (btn) btn.textContent = '🌙';
+    localStorage.setItem('fablab_theme', 'light');
+  }
+}
+
+// ============================================================
 // DATA
 // ============================================================
 
@@ -986,6 +1147,10 @@ let currentLogFilter = 'all';
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+  // Restore saved theme preference
+  const savedTheme = localStorage.getItem('fablab_theme');
+  if (savedTheme === 'dark') setDarkMode(true);
+
   const d = new Date();
   document.getElementById('quoteDate').value = d.toISOString().split('T')[0];
   addLineItem();
