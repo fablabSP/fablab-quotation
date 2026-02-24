@@ -1047,6 +1047,14 @@
       <div class="section-title"><span class="section-title-icon">🟫</span> Plywood Prices ($ per sheet)</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Size, Columns = Thickness (3mm / 5mm)</div>
       <div id="plywoodTable" style="overflow-x:auto;"></div>
+
+      <div class="section-title" style="margin-top:20px;"><span class="section-title-icon">🪞</span> Acrylic Mirror — Silver (2mm)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">TF-SM Optical Silver · 4'×6' sheet</div>
+      <div id="acrylicSilverTable" style="overflow-x:auto;"></div>
+
+      <div class="section-title" style="margin-top:20px;"><span class="section-title-icon">🪞</span> Acrylic Mirror — Gold (2mm)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">TF-GM Optical Gold · 4'×8' sheet</div>
+      <div id="acrylicGoldTable" style="overflow-x:auto;"></div>
     </div>
 
     <!-- VINYL -->
@@ -1124,6 +1132,10 @@ function setDarkMode(dark) {
     if (btn) btn.textContent = '🌙';
     localStorage.setItem('fablab_theme', 'light');
   }
+  // Re-render rates panel so JS-generated table colours update
+  if (document.getElementById('panel-rates')?.classList.contains('active')) {
+    renderRatesPanel();
+  }
 }
 
 // ============================================================
@@ -1131,15 +1143,17 @@ function setDarkMode(dark) {
 // ============================================================
 
 const PRICES = {
-  acrylic: { A7:{3:1,5:1.5,10:2.5}, A6:{3:2,5:3,10:5}, A5:{3:3.5,5:6,10:10}, A4:{3:7,5:12,10:20}, A3:{3:14,5:24,10:40}, A2:{3:28,5:48,10:80} },
-  plywood: { A7:{3:1,5:1}, A6:{3:1,5:1}, A5:{3:1,5:2}, A4:{3:2,5:2}, A3:{3:3,5:4}, A2:{3:6,5:8} },
+  acrylic: { A7:{3:1,5:1.5,10:2.5}, A6:{3:2,5:3,10:5}, A5:{3:3.5,5:6,10:10}, A4:{3:7,5:12,10:20}, A3:{3:14,5:24,10:40}, A2:{3:28,5:48,10:80}, A1:{3:56,5:96,10:160}, A0:{3:112,5:192,10:320} },
+  acrylic_silver: { A7:2, A6:4.5, A5:8.5, A4:17.5, A3:35, A2:70, A1:140, A0:280.5 },
+  acrylic_gold:   { A7:2, A6:4.5, A5:8.5, A4:17.5, A3:35, A2:70, A1:140, A0:280.5 },
+  plywood: { A7:{3:1,5:1,15:2,20:3,28:5}, A6:{3:1,5:1,15:2,20:3,28:6}, A5:{3:1,5:2,15:4,20:6,28:10}, A4:{3:2,5:2,15:6,20:9,28:15}, A3:{3:3,5:4,15:10,20:15,28:25}, A2:{3:6,5:8,15:20,20:30,28:50}, A1:{3:10,5:14,15:36,20:54,28:90}, A0:{3:18,5:25,15:65,20:95,28:160} },
   vinyl: { small:20, medium:45, large:85, xlarge:200 },
-  cardboard_single: { '5':{A0:18,A1:9,A2:5,A3:2}, '10':{A0:20,A1:10,A2:5,A3:3}, '15':{A0:22,A1:11,A2:6,A3:3} },
+  cardboard_single: { '1':{A0:6,A1:3,A2:2,A3:1}, '3':{A0:10,A1:5,A2:3,A3:1.5}, '5':{A0:18,A1:9,A2:5,A3:2}, '10':{A0:20,A1:10,A2:5,A3:3}, '15':{A0:22,A1:11,A2:6,A3:3} },
   cardboard_double: { '5':{A0:27,A1:14,A2:7,A3:3}, '10':{A0:29,A1:15,A2:7,A3:4}, '15':{A0:31,A1:16,A2:8,A3:4} },
   gypsum: { round:13, hexagon:13, cube_small:null }
 };
-const MACHINE_RATES = { '3d_printer':5, laser_cutter:40.5, large_format:45, cardboard_cutter:45 };
-const MACHINE_LABELS = { '3d_printer':'3D Printer ($5/hr)', laser_cutter:'Laser Cutter ($40.50/hr)', large_format:'Large Format Printer ($45/hr)', cardboard_cutter:'Cardboard Cutter ($45/hr)' };
+const MACHINE_RATES = { '3d_printer':5, laser_cutter:40.5, large_format:45, cardboard_cutter:45, cnc:45 };
+const MACHINE_LABELS = { '3d_printer':'3D Printer ($5/hr)', laser_cutter:'Laser Cutter ($40.50/hr)', large_format:'Large Format Printer ($45/hr)', cardboard_cutter:'Cardboard Cutter ($45/hr)', cnc:'CNC ($45/hr)' };
 let lineItemCount = 0, accessoryCount = 0;
 let currentLogFilter = 'all';
 
@@ -1197,8 +1211,10 @@ function addLineItem() {
         <label>Material Type</label>
         <select id="li-type-${id}" onchange="onMaterialChange(${id})">
           <option value="">— Select Material —</option>
-          <option value="acrylic">Acrylic (Laser Cutter)</option>
-          <option value="plywood">Plywood 3/5mm (Laser Cutter)</option>
+          <option value="acrylic">Acrylic</option>
+          <option value="acrylic_silver">Acrylic Mirror — Silver</option>
+          <option value="acrylic_gold">Acrylic Mirror — Gold</option>
+          <option value="plywood">Plywood</option>
           <option value="vinyl">Vinyl (Large Format Printer)</option>
           <option value="cardboard_single">Cardboard Single Wall</option>
           <option value="cardboard_double">Cardboard Double Wall</option>
@@ -1248,11 +1264,27 @@ function onMaterialChange(id) {
   if (machineGroup) machineGroup.style.display = '';
 
   if (type === 'acrylic') {
-    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2'], [3,5,10]);
+    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,10]);
+    setMachine(machineSelect, 'laser_cutter');
+  } else if (type === 'acrylic_silver' || type === 'acrylic_gold') {
+    const mirrorLabel = type === 'acrylic_silver' ? 'Silver Mirror' : 'Gold Mirror';
+    fieldsDiv.innerHTML = `<div class="form-row">
+      <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
+        ${['A7','A6','A5','A4','A3','A2','A1','A0'].map(s=>`<option>${s}</option>`).join('')}
+      </select></div>
+      <div class="form-group"><label>Thickness</label>
+        <input type="text" value="2mm" readonly style="color:var(--text-muted);">
+      </div>
+    </div>`;
     setMachine(machineSelect, 'laser_cutter');
   } else if (type === 'plywood') {
-    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2'], [3,5]);
-    setMachine(machineSelect, 'laser_cutter');
+    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,15,20,28]);
+    // Plywood can use Laser Cutter or CNC — let staff choose
+    machineSelect.disabled = false;
+    machineSelect.innerHTML = `
+      <option value="laser_cutter">${MACHINE_LABELS['laser_cutter']}</option>
+      <option value="cnc">${MACHINE_LABELS['cnc']}</option>
+    `;
   } else if (type === 'vinyl') {
     fieldsDiv.innerHTML = `<div class="form-row">
       <div class="form-group"><label>Size</label><select id="li-tier-${id}" onchange="updateVinylPrice(${id}); calcTotal()">
@@ -1276,7 +1308,7 @@ function onMaterialChange(id) {
   } else if (type === 'cardboard_single' || type === 'cardboard_double') {
     fieldsDiv.innerHTML = `<div class="form-row">
       <div class="form-group"><label>Thickness</label><select id="li-thick-${id}" onchange="calcTotal()">
-        <option value="5">5mm</option><option value="10">10mm</option><option value="15">15mm</option>
+        <option value="1">1mm</option><option value="3">3mm</option><option value="5">5mm</option><option value="10">10mm</option><option value="15">15mm</option>
       </select></div>
       <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
         <option value="A0">A0</option><option value="A1">A1</option><option value="A2">A2</option><option value="A3">A3</option>
@@ -1483,7 +1515,13 @@ function calcMaterialCost(id) {
     const size = document.getElementById(`li-size-${id}`)?.value || 'A4';
     const thick = document.getElementById(`li-thick-${id}`)?.value || '3';
     matPerItem = PRICES[type]?.[size]?.[parseInt(thick)] || 0;
-    descDetail = `${type} · ${size} · ${thick}mm`;
+    descDetail = `${type === 'plywood' ? 'Plywood' : 'Acrylic'} · ${size} · ${thick}mm`;
+  } else if (type === 'acrylic_silver' || type === 'acrylic_gold') {
+    const size = document.getElementById(`li-size-${id}`)?.value || 'A4';
+    const pt = PRICES[type];
+    matPerItem = pt?.[size] || 0;
+    const mirrorLabel = type === 'acrylic_silver' ? 'Acrylic Mirror Silver' : 'Acrylic Mirror Gold';
+    descDetail = `${mirrorLabel} · ${size} · 2mm`;
   } else if (type === 'vinyl') {
     const tier = document.getElementById(`li-tier-${id}`)?.value || 'small';
     matPerItem = PRICES.vinyl[tier] || 0;
@@ -2828,15 +2866,28 @@ function notify(msg) {
 // ============================================================
 // RATES PANEL — render editable tables
 // ============================================================
+function getRatesColors() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    rowBg:    dark ? '#22262f' : '#f9fafb',
+    rowBorder:dark ? '#2e3340' : '#e5e7eb',
+    hdrBg:    dark ? '#2a2f3a' : '#f3f4f6',
+    muted:    dark ? '#9ca3af' : '#6b7280',
+    text:     dark ? '#e8eaf0' : '#1a1d23',
+  };
+}
+
 function renderRatesPanel() {
+  const C = getRatesColors();
+
   // Machine rates
   const mr = document.getElementById('machineRatesTable');
   if (mr) {
     mr.innerHTML = Object.entries(MACHINE_RATES).map(([k,v]) => `
-      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};border-radius:6px;">
         <input type="text" value="${MACHINE_LABELS[k]?.split(' (')[0] || k}" id="ml-${k}" style="font-weight:700;" placeholder="Machine name">
         <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:11px;color:#6b7280;">$/hr</span>
+          <span style="font-size:11px;color:${C.muted};">$/hr</span>
           <input type="number" value="${v}" id="mr-${k}" min="0" step="0.5" oninput="updateMachineRate('${k}')" style="width:100%;">
         </div>
         <button class="btn btn-danger btn-sm" onclick="deleteMachineRate('${k}')">✕</button>
@@ -2845,19 +2896,24 @@ function renderRatesPanel() {
 
   // Acrylic grid
   renderGridTable('acrylicTable', 'acrylic',
-    ['A7','A6','A5','A4','A3','A2'], [3,5,10], 'Size', 'Thickness (mm)');
+    ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,10], 'Size', 'Thickness (mm)');
 
   // Plywood grid
   renderGridTable('plywoodTable', 'plywood',
-    ['A7','A6','A5','A4','A3','A2'], [3,5], 'Size', 'Thickness (mm)');
+    ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,15,20,28], 'Size', 'Thickness (mm)');
+
+  // Acrylic Mirror Silver
+  renderMirrorTable('acrylicSilverTable', 'acrylic_silver');
+  // Acrylic Mirror Gold
+  renderMirrorTable('acrylicGoldTable', 'acrylic_gold');
 
   // Vinyl
   const vt = document.getElementById('vinylTable');
   if (vt) {
     vt.innerHTML = Object.entries(PRICES.vinyl).map(([tier,price]) => `
-      <div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
-        <div style="font-size:12px;font-weight:700;">${{small:'Small (up to 0.3m)',medium:'Medium (0.3–1m)',large:'Large (1–2m)',xlarge:'Extra Large (2–5m)'}[tier]}</div>
-        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#6b7280;">$</span>
+      <div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};border-radius:6px;">
+        <div style="font-size:12px;font-weight:700;color:${C.text};">${{small:'Small (up to 0.3m)',medium:'Medium (0.3–1m)',large:'Large (1–2m)',xlarge:'Extra Large (2–5m)'}[tier]}</div>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:${C.muted};">$</span>
         <input type="number" value="${price}" id="vinyl-${tier}" min="0" step="1" oninput="PRICES.vinyl['${tier}']=parseFloat(this.value)||0;updateVinylDisplays();" style="width:100%;"></div>
       </div>`).join('');
   }
@@ -2870,9 +2926,9 @@ function renderRatesPanel() {
   const pt = document.getElementById('printRateTable');
   if (pt) {
     const rate = PRICES._3dprint_rate || 25;
-    pt.innerHTML = `<div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
-      <div style="font-size:12px;font-weight:700;">PLA / PETG rate ($ per kg)</div>
-      <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#6b7280;">$</span>
+    pt.innerHTML = `<div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;padding:8px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};border-radius:6px;">
+      <div style="font-size:12px;font-weight:700;color:${C.text};">PLA / PETG rate ($ per kg)</div>
+      <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:${C.muted};">$</span>
       <input type="number" value="${rate}" id="printRate" min="0" step="1" oninput="PRICES._3dprint_rate=parseFloat(this.value)||25;" style="width:100%;"></div>
     </div>`;
   }
@@ -2881,9 +2937,9 @@ function renderRatesPanel() {
   const gt = document.getElementById('gypsumTable');
   if (gt) {
     gt.innerHTML = Object.entries(PRICES.gypsum).map(([shape,price]) => `
-      <div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
-        <div style="font-size:12px;font-weight:700;">${shape.charAt(0).toUpperCase()+shape.slice(1).replace('_',' ')}</div>
-        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#6b7280;">$</span>
+      <div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};border-radius:6px;">
+        <div style="font-size:12px;font-weight:700;color:${C.text};">${shape.charAt(0).toUpperCase()+shape.slice(1).replace('_',' ')}</div>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:${C.muted};">$</span>
         <input type="number" value="${price||''}" id="gypsum-${shape}" min="0" step="0.5" placeholder="custom"
           oninput="PRICES.gypsum['${shape}']=parseFloat(this.value)||null;" style="width:100%;"></div>
       </div>`).join('');
@@ -2893,15 +2949,16 @@ function renderRatesPanel() {
 function renderGridTable(containerId, priceKey, rows, cols, rowLabel, colLabel) {
   const el = document.getElementById(containerId);
   if (!el) return;
+  const C = getRatesColors();
   let html = `<table style="border-collapse:collapse;min-width:400px;">
-    <thead><tr><th style="padding:6px 10px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;text-align:left;">${rowLabel} \ ${colLabel}</th>`;
-  cols.forEach(c => html += `<th style="padding:6px 10px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${c}</th>`);
+    <thead><tr><th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;text-align:left;color:${C.text};">${rowLabel} \ ${colLabel}</th>`;
+  cols.forEach(c => html += `<th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;text-align:center;color:${C.text};">${c}</th>`);
   html += '</tr></thead><tbody>';
   rows.forEach(row => {
-    html += `<tr><td style="padding:6px 10px;background:#f9fafb;border:1px solid #e5e7eb;font-weight:700;font-size:12px;">${row}</td>`;
+    html += `<tr><td style="padding:6px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};font-weight:700;font-size:12px;color:${C.text};">${row}</td>`;
     cols.forEach(col => {
       const val = PRICES[priceKey]?.[row]?.[col] ?? '';
-      html += `<td style="padding:4px 6px;border:1px solid #e5e7eb;">
+      html += `<td style="padding:4px 6px;border:1px solid ${C.rowBorder};">
         <input type="number" value="${val}" min="0" step="0.5" style="width:70px;text-align:right;"
           oninput="if(!PRICES['${priceKey}']) PRICES['${priceKey}']={};
                    if(!PRICES['${priceKey}']['${row}']) PRICES['${priceKey}']['${row}']={};
@@ -2917,23 +2974,51 @@ function renderGridTable(containerId, priceKey, rows, cols, rowLabel, colLabel) 
 function renderCardboardTable(containerId, priceKey) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const thicknesses = ['5','10','15'];
+  const C = getRatesColors();
+  const thicknesses = ['1','3','5','10','15'];
   const sizes = ['A0','A1','A2','A3'];
   let html = `<table style="border-collapse:collapse;">
-    <thead><tr><th style="padding:6px 10px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;">Thickness \ Size</th>`;
-  sizes.forEach(s => html += `<th style="padding:6px 10px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${s}</th>`);
+    <thead><tr><th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.text};">Thickness \ Size</th>`;
+  sizes.forEach(s => html += `<th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;text-align:center;color:${C.text};">${s}</th>`);
   html += '</tr></thead><tbody>';
   thicknesses.forEach(t => {
-    html += `<tr><td style="padding:6px 10px;background:#f9fafb;border:1px solid #e5e7eb;font-weight:700;font-size:12px;">${t}mm</td>`;
+    html += `<tr><td style="padding:6px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};font-weight:700;font-size:12px;color:${C.text};">${t}mm</td>`;
     sizes.forEach(s => {
       const val = PRICES[priceKey]?.[t]?.[s] ?? '';
-      html += `<td style="padding:4px 6px;border:1px solid #e5e7eb;">
+      html += `<td style="padding:4px 6px;border:1px solid ${C.rowBorder};">
         <input type="number" value="${val}" min="0" step="0.5" style="width:70px;text-align:right;"
           oninput="if(!PRICES['${priceKey}']['${t}']) PRICES['${priceKey}']['${t}']={};
                    PRICES['${priceKey}']['${t}']['${s}']=parseFloat(this.value)||0;">
       </td>`;
     });
     html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderMirrorTable(containerId, priceKey) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const C = getRatesColors();
+  const sizes = ['A7','A6','A5','A4','A3','A2','A1','A0'];
+  let html = `<table style="border-collapse:collapse;min-width:400px;">
+    <thead><tr>
+      <th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.text};">Size</th>
+      <th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.text};">Thickness</th>
+      <th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.text};">Price ($)</th>
+    </tr></thead><tbody>`;
+  sizes.forEach(size => {
+    const val = PRICES[priceKey]?.[size] ?? '';
+    html += `<tr>
+      <td style="padding:6px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};font-weight:700;font-size:12px;color:${C.text};">${size}</td>
+      <td style="padding:6px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.muted};">2mm</td>
+      <td style="padding:4px 6px;border:1px solid ${C.rowBorder};">
+        <input type="number" value="${val}" min="0" step="0.5" style="width:80px;text-align:right;"
+          oninput="if(!PRICES['${priceKey}']) PRICES['${priceKey}']={};
+                   PRICES['${priceKey}']['${size}']=parseFloat(this.value)||0;">
+      </td>
+    </tr>`;
   });
   html += '</tbody></table>';
   el.innerHTML = html;
