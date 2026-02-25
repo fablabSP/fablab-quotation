@@ -91,16 +91,18 @@
   [data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.75) !important; }
   [data-theme="dark"] .modal-box { background: var(--surface) !important; border: 1px solid var(--border) !important; }
   /* Preview modal content always light — quotes are print documents */
+  /* Preview modal — always render as a light print document regardless of app theme */
   #previewModal .modal-box { background: #ffffff !important; }
-  #previewModal .quote-doc { background: #ffffff !important; color: #1a1d23 !important; }
-  #previewModal .quote-doc * { color: inherit; }
+  #previewModal #quoteDocContent { background: #ffffff !important; color: #1a1d23 !important; }
+  #previewModal #quoteDocContent * { color: inherit !important; background: transparent !important; border-color: revert !important; }
+  /* Lock these three elements to black bg + white text always — never affected by theme */
+  #previewModal .qdoc-table th        { background: #1a1d23 !important; color: #ffffff !important; }
+  #previewModal .qdoc-total-row.grand { background: #1a1d23 !important; color: #ffffff !important; }
+  #previewModal .qdoc-vires-title     { background: #1a1d23 !important; color: #ffffff !important; }
+  /* Zebra stripe rows */
+  #previewModal .qdoc-table tr:nth-child(even) td { background: #fafafa !important; }
+  /* Dark mode wrapper still white */
   [data-theme="dark"] #previewModal .modal-box { background: #ffffff !important; border-color: #ccc !important; }
-  [data-theme="dark"] #previewModal #quoteDocContent { background: #ffffff !important; color: #1a1d23 !important; }
-  [data-theme="dark"] #previewModal #quoteDocContent * {
-    color: revert !important;
-    background: revert !important;
-    border-color: revert !important;
-  }
   /* Toolbar stays dark regardless */
   #previewModal .modal-toolbar { background: #1a1d23 !important; }
   [data-theme="dark"] .modal-header { background: var(--surface2) !important; border-color: var(--border) !important; }
@@ -912,6 +914,41 @@
           </div>
         </div>
 
+        <!-- RATE CONFIGURATION — always visible -->
+        <div style="border-top:2px solid var(--border);margin-top:4px;padding-top:12px;">
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Charge Rates</div>
+          <div class="form-row form-row-3">
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:5px;">
+                SP Charges
+                <span style="font-size:10px;color:var(--text-light);font-weight:400;">(External / Workshop)</span>
+              </label>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="number" id="rateSP" value="18.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()">
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:5px;">
+                TIE Charges
+
+              </label>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="number" id="rateTIE" value="11.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()">
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>GST</label>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="number" id="rateGST" value="9" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()">
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
       </div>
     </div>
 
@@ -1284,13 +1321,13 @@ function onMaterialChange(id) {
   if (machineGroup) machineGroup.style.display = '';
 
   if (type === 'acrylic') {
-    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,10]);
+    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,10], 'A5');
     setMachine(machineSelect, 'laser_cutter');
   } else if (type === 'acrylic_silver' || type === 'acrylic_gold') {
     const mirrorLabel = type === 'acrylic_silver' ? 'Silver Mirror' : 'Gold Mirror';
     fieldsDiv.innerHTML = `<div class="form-row">
       <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
-        ${['A7','A6','A5','A4','A3','A2','A1','A0'].map(s=>`<option>${s}</option>`).join('')}
+        ${['A7','A6','A5','A4','A3','A2','A1','A0'].map(s=>`<option${s==='A5'?' selected':''} >${s}</option>`).join('')}
       </select></div>
       <div class="form-group"><label>Thickness</label>
         <input type="text" value="2mm" readonly style="color:var(--text-muted);">
@@ -1298,7 +1335,7 @@ function onMaterialChange(id) {
     </div>`;
     setMachine(machineSelect, 'laser_cutter');
   } else if (type === 'plywood') {
-    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,15,20,28]);
+    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,15,20,28], 'A5');
     // Plywood can use Laser Cutter or CNC — let staff choose
     machineSelect.disabled = false;
     machineSelect.innerHTML = `
@@ -1331,7 +1368,7 @@ function onMaterialChange(id) {
         <option value="1">1mm</option><option value="3">3mm</option><option value="5">5mm</option><option value="10">10mm</option><option value="15">15mm</option>
       </select></div>
       <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
-        <option value="A0">A0</option><option value="A1">A1</option><option value="A2">A2</option><option value="A3">A3</option>
+        <option value="A0" selected>A0</option><option value="A1">A1</option><option value="A2">A2</option><option value="A3">A3</option>
       </select></div></div>`;
     setMachine(machineSelect, 'cardboard_cutter');
   } else if (type === '3dprint') {
@@ -1376,10 +1413,10 @@ function onMaterialChange(id) {
     calcTotal();
 }
 
-function sizeThickFields(id, sizes, thicknesses) {
+function sizeThickFields(id, sizes, thicknesses, defaultSize) {
   return `<div class="form-row">
     <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
-      ${sizes.map(s=>`<option>${s}</option>`).join('')}
+      ${sizes.map(s=>`<option${defaultSize && s===defaultSize ? ' selected' : ''}>${s}</option>`).join('')}
     </select></div>
     <div class="form-group"><label>Thickness</label><select id="li-thick-${id}" onchange="calcTotal()">
       ${thicknesses.map(t=>`<option value="${t}">${t}mm</option>`).join('')}
@@ -1657,9 +1694,23 @@ function calcTotal() {
 
   const qType = document.querySelector('input[name="quoteType"]:checked').value;
   const isWorkshopType = qType === 'workshop';
-  let tieFee = 0, gst = 0, grand = subtotal;
+  // Read live rates from inputs
+  const rateSP  = parseFloat(document.getElementById('rateSP')?.value  || 18.5) / 100;
+  const rateTIE = parseFloat(document.getElementById('rateTIE')?.value || 11.5) / 100;
+  const rateGST = parseFloat(document.getElementById('rateGST')?.value || 9)    / 100;
+  const rateSPpct  = parseFloat(document.getElementById('rateSP')?.value  || 18.5);
+  const rateTIEpct = parseFloat(document.getElementById('rateTIE')?.value || 11.5);
+  const rateGSTpct = parseFloat(document.getElementById('rateGST')?.value || 9);
+  let spCharge = 0, tieFee = 0, gst = 0, grand = subtotal;
   let costExclGST = subtotal, costInclGST = subtotal;
-  if (isExternal || isWorkshopType) { tieFee = subtotal * 0.3; costExclGST = subtotal + tieFee; gst = costExclGST * 0.09; costInclGST = costExclGST + gst; grand = costInclGST; }
+  if (isExternal || isWorkshopType) {
+    spCharge    = subtotal * rateSP;
+    tieFee      = subtotal * rateTIE;
+    costExclGST = subtotal + spCharge;
+    gst         = costExclGST * rateGST;
+    costInclGST = costExclGST + gst;
+    grand       = costInclGST;
+  }
 
   // summary
   const lines = [];
@@ -1672,21 +1723,28 @@ function calcTotal() {
   if (projExpAmount > 0) lines.push(['Project Expenses', projExpAmount]);
   if (expeditedFee > 0) lines.push([`Expedited (${expPctLabel}%)`, expeditedFee]);
   if (designFee > 0) lines.push(['Design Fee', designFee]);
-  if (tieFee > 0) lines.push(['SP Charge Rate (18.5%)', tieFee]);
+  if (spCharge > 0) lines.push([`SP Charges (${rateSPpct}%)`, spCharge]);
   if ((isExternal || isWorkshopType) && costExclGST > 0) lines.push(['Total (excl. GST)', costExclGST]);
-  if (gst > 0) lines.push(['GST (9%)', gst]);
+  if (gst > 0) lines.push([`GST (${rateGSTpct}%)`, gst]);
 
-  const tieSplit = tieFee > 0 ? (tieFee * (11.5/30)) : 0; // 11.5% of subtotal hidden TIE portion
+  // TIE shown as a staff-only informational note — NOT a separate charge line
   const tieNote = (tieFee > 0)
-    ? `<div style="display:flex;align-items:center;gap:6px;margin:4px 0 6px 0;padding:6px 8px;background:#fef9c3;border:1px dashed #fbbf24;border-radius:5px;font-size:11px;color:#92400e;">
-        <span style="font-size:13px;">🔒</span>
-        <span><strong>TIE charge (11.5%): $${tieSplit.toFixed(2)}</strong> — included in SP Charge Rate above. <em>Not shown to client.</em></span>
+    ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0 5px 10px;font-size:11px;color:var(--text-muted);border-left:2px solid #fbbf24;margin:-2px 0 4px 0;">
+        <span>🔒 TIE (${rateTIEpct}%) — incl. in SP Charges</span>
+        <span style="font-weight:600;">$${tieFee.toFixed(2)}</span>
       </div>`
     : '';
 
-  document.getElementById('summaryLines').innerHTML = lines.map(([l,v])=>
-    `<div class="summary-line"><span class="lbl">${l}</span><span class="val">$${v.toFixed(2)}</span></div>`
-  ).join('') + tieNote || `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
+  const summaryHTML = lines.map(([l,v])=>
+    `<div class="summary-line"><span class="lbl">${l}</span><span class="val">${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}</span></div>`
+  ).join('');
+
+  document.getElementById('summaryLines').innerHTML = summaryHTML
+    ? summaryHTML.replace(
+        `<div class="summary-line"><span class="lbl">Total (excl. GST)</span>`,
+        tieNote + `<div class="summary-line"><span class="lbl">Total (excl. GST)</span>`
+      )
+    : `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
   document.getElementById('summaryTotal').textContent = '$' + grand.toFixed(2);
 
   const fpEl = document.getElementById('finePrintSidebar');
@@ -1696,7 +1754,7 @@ function calcTotal() {
   const qTypeNow = document.querySelector('input[name="quoteType"]:checked').value;
   if (qTypeNow === 'workshop') getWorkshopDateInfo();
 
-  window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs };
+  window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct };
 }
 
 // ============================================================
@@ -1958,15 +2016,14 @@ function buildQuoteDoc() {
   const allRows = (isWorkshop ? workshopRows : rows) + extraRows;
 
   // ── Totals block ──
-  const surchargeLabel = 'SP Charge Rate (18.5%)';
   const totalRowsArr = [
     (d.helperCost > 0 && !isWorkshop) ? ['Student Helpers / Agent', d.helperCost] : null,
     (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work (' + (d.expPctLabel||50) + '%)', d.expeditedFee] : null,
     (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
     ['Subtotal', d.subtotal],
-    d.tieFee > 0 ? [surchargeLabel, d.tieFee] : null,
+    d.spCharge > 0 ? ['SP Charge Rate', d.spCharge] : null,   // no % on client doc — amount only
     ((isExternal || isWorkshop) && d.costExclGST > 0) ? ['Total (excl. GST)', d.costExclGST] : null,
-    d.gst > 0 ? ['GST (9%)', d.gst] : null,
+    d.gst > 0 ? ['GST (' + (d.rateGSTpct || 9) + '%)', d.gst] : null,
   ].filter(Boolean).map(([l,v]) => '<div class="qdoc-total-row"><span>'+l+'</span><span class="amt">$'+v.toFixed(2)+'</span></div>').join('');
 
   // ── Vires block (internal only) ──
@@ -1984,7 +2041,7 @@ function buildQuoteDoc() {
 
   const footerNote = isInternal
     ? 'Internal pricing — SP Surcharge and GST are not applicable for internal vires.'
-    : 'SP Charge Rate (18.5%) and GST (9%) are applied to this quotation.';
+    : 'SP Charge Rate and GST (' + (d.rateGSTpct || 9) + '%) are applied to this quotation.';
 
   const workshopDates = isWorkshop ? getWorkshopDateInfo() : null;
   const refLine = isWorkshop
@@ -2176,6 +2233,9 @@ function collectFormState() {
     projExpOn:     document.getElementById('toggleProjExp')?.checked,
     projExpAmount: document.getElementById('projExpAmount')?.value,
     projExpDesc:   document.getElementById('projExpDesc')?.value,
+    rateSP:    document.getElementById('rateSP')?.value,
+    rateTIE:   document.getElementById('rateTIE')?.value,
+    rateGST:   document.getElementById('rateGST')?.value,
     // Workshop
     overallCoursePrice: document.getElementById('overallCoursePrice')?.value,
     overallCoursePriceNote: document.getElementById('overallCoursePriceNote')?.value,
@@ -2666,6 +2726,10 @@ function restoreFormState(state) {
   if (state.projExpAmount) { const pa = document.getElementById('projExpAmount'); if(pa) pa.value = state.projExpAmount; }
   if (state.projExpDesc)   { const pd = document.getElementById('projExpDesc');   if(pd) pd.value = state.projExpDesc; }
 
+  if (state.rateSP)  { const el = document.getElementById('rateSP');  if(el) el.value = state.rateSP; }
+  if (state.rateTIE) { const el = document.getElementById('rateTIE'); if(el) el.value = state.rateTIE; }
+  if (state.rateGST) { const el = document.getElementById('rateGST'); if(el) el.value = state.rateGST; }
+
   // Workshop overall price & dates
   if (document.getElementById('overallCoursePrice'))     document.getElementById('overallCoursePrice').value = state.overallCoursePrice || '';
   if (document.getElementById('overallCoursePriceNote')) document.getElementById('overallCoursePriceNote').value = state.overallCoursePriceNote || '';
@@ -2831,6 +2895,11 @@ function resetForm() {
   if (pe) pe.value = '0';
   const pd = document.getElementById('projExpDesc');
   if (pd) pd.value = '';
+
+  // ── Rate defaults ─────────────────────────────────────────────
+  const rSP  = document.getElementById('rateSP');  if (rSP)  rSP.value  = '18.5';
+  const rTIE = document.getElementById('rateTIE'); if (rTIE) rTIE.value = '11.5';
+  const rGST = document.getElementById('rateGST'); if (rGST) rGST.value = '9';
 
   // ── Workshop / Course fields ──────────────────────────────────
   // Reset date mode to continuous
