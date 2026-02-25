@@ -1765,8 +1765,12 @@ function calcTotal() {
   let costExclGST = subtotal, costInclGST = subtotal;
   const workshopChargesOn = !isWorkshopType || (document.getElementById('workshopChargesEnabled')?.checked !== false);
   if (isExternal || (isWorkshopType && workshopChargesOn)) {
-    spCharge    = subtotal * rateSP;
-    tieFee      = subtotal * rateTIE;
+    // SP + TIE apply for external always; workshop only when toggle enabled
+    spCharge = subtotal * rateSP;
+    tieFee   = subtotal * rateTIE;
+  }
+  if (isExternal || isWorkshopType) {
+    // GST always applies for external and workshop regardless of SP/TIE toggle
     costExclGST = subtotal + spCharge;
     gst         = costExclGST * rateGST;
     costInclGST = costExclGST + gst;
@@ -1785,8 +1789,10 @@ function calcTotal() {
   if (expeditedFee > 0) lines.push([`Expedited (${expPctLabel}%)`, expeditedFee]);
   if (designFee > 0) lines.push(['Design Fee', designFee]);
   if (spCharge > 0) lines.push([`SP Charges (${rateSPpct}%)`, spCharge]);
-  if ((isExternal || isWorkshopType) && costExclGST > 0) lines.push(['Total (excl. GST)', costExclGST]);
-  if (gst > 0) lines.push([`GST (${rateGSTpct}%)`, gst]);
+  // "Total excl. GST" only meaningful when SP charge is also shown
+  if ((isExternal || (isWorkshopType && workshopChargesOn)) && costExclGST > 0) lines.push(['Total (excl. GST)', costExclGST]);
+  // GST always shown for external and workshop (even when SP/TIE toggle is off)
+  if ((isExternal || isWorkshopType) && gst > 0) lines.push([`GST (${rateGSTpct}%)`, gst]);
 
   // TIE shown as a staff-only informational note — NOT a separate charge line
   const tieNote = (tieFee > 0)
@@ -1815,7 +1821,7 @@ function calcTotal() {
   const qTypeNow = document.querySelector('input[name="quoteType"]:checked').value;
   if (qTypeNow === 'workshop') getWorkshopDateInfo();
 
-  window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct };
+  window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct, workshopChargesOn };
 }
 
 // ============================================================
@@ -2092,14 +2098,17 @@ function buildQuoteDoc() {
   const allRows = (isWorkshop ? workshopRows : rows) + extraRows;
 
   // ── Totals block ──
+  const workshopChargesOnDoc = !isWorkshop || d.workshopChargesOn !== false;
   const totalRowsArr = [
     (d.helperCost > 0 && !isWorkshop) ? ['Student Helpers / Agent', d.helperCost] : null,
     (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work (' + (d.expPctLabel||50) + '%)', d.expeditedFee] : null,
     (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
     ['Subtotal', d.subtotal],
     d.spCharge > 0 ? ['SP Charge Rate', d.spCharge] : null,   // no % on client doc — amount only
-    ((isExternal || isWorkshop) && d.costExclGST > 0) ? ['Total (excl. GST)', d.costExclGST] : null,
-    d.gst > 0 ? ['GST (' + (d.rateGSTpct || 9) + '%)', d.gst] : null,
+    // Total excl. GST only shown when SP charge is also present
+    (d.spCharge > 0 && (isExternal || isWorkshop) && d.costExclGST > 0) ? ['Total (excl. GST)', d.costExclGST] : null,
+    // GST always applies for external and workshop
+    ((isExternal || isWorkshop) && d.gst > 0) ? ['GST (' + (d.rateGSTpct || 9) + '%)', d.gst] : null,
   ].filter(Boolean).map(([l,v]) => '<div class="qdoc-total-row"><span>'+l+'</span><span class="amt">$'+v.toFixed(2)+'</span></div>').join('');
 
   // ── Vires block (internal only) ──
