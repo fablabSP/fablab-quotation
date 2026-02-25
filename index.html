@@ -1821,6 +1821,20 @@ function calcTotal() {
   const qTypeNow = document.querySelector('input[name="quoteType"]:checked').value;
   if (qTypeNow === 'workshop') getWorkshopDateInfo();
 
+  // Update tax note based on actual charges applied
+  const taxNoteEl = document.getElementById('taxNote');
+  if (taxNoteEl) {
+    if (isExternal) {
+      taxNoteEl.textContent = 'External: SP Charge Rate (' + rateSPpct + '%) & TIE (' + rateTIEpct + '%) applied.';
+    } else if (isWorkshopType) {
+      taxNoteEl.textContent = workshopChargesOn
+        ? 'Workshop: SP Charge Rate (' + rateSPpct + '%) + GST applied.'
+        : 'Workshop: GST (' + rateGSTpct + '%) applied only.';
+    } else {
+      taxNoteEl.textContent = 'Internal: No SP Surcharge or GST applied.';
+    }
+  }
+
   window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct, workshopChargesOn };
 }
 
