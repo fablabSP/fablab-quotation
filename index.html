@@ -90,6 +90,19 @@
   /* Modal */
   [data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.75) !important; }
   [data-theme="dark"] .modal-box { background: var(--surface) !important; border: 1px solid var(--border) !important; }
+  /* Preview modal content always light — quotes are print documents */
+  #previewModal .modal-box { background: #ffffff !important; }
+  #previewModal .quote-doc { background: #ffffff !important; color: #1a1d23 !important; }
+  #previewModal .quote-doc * { color: inherit; }
+  [data-theme="dark"] #previewModal .modal-box { background: #ffffff !important; border-color: #ccc !important; }
+  [data-theme="dark"] #previewModal #quoteDocContent { background: #ffffff !important; color: #1a1d23 !important; }
+  [data-theme="dark"] #previewModal #quoteDocContent * {
+    color: revert !important;
+    background: revert !important;
+    border-color: revert !important;
+  }
+  /* Toolbar stays dark regardless */
+  #previewModal .modal-toolbar { background: #1a1d23 !important; }
   [data-theme="dark"] .modal-header { background: var(--surface2) !important; border-color: var(--border) !important; }
 
   /* Quote log */
@@ -946,7 +959,14 @@
           <div style="font-size:16px;font-weight:800;">Quote Log</div>
           <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Saved quotations</div>
         </div>
-        <button class="btn btn-danger btn-sm" onclick="clearLog()">🗑 Clear All</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-ghost btn-sm" onclick="backupLog()" title="Download all quotes as CSV backup">⬇ Backup</button>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0;" title="Restore quotes from a CSV backup file">
+            ⬆ Restore
+            <input type="file" id="restoreFileInput" accept=".csv" onchange="restoreLog(event)" style="display:none;">
+          </label>
+          <button class="btn btn-danger btn-sm" onclick="clearLog()">🗑 Clear All</button>
+        </div>
       </div>
       <div class="log-filters">
         <button class="filter-btn active" onclick="filterLog('all', this)">All</button>
@@ -2851,6 +2871,96 @@ function resetForm() {
   addAccessory();
   calcTotal();
   notify('Quote Builder cleared.');
+}
+
+
+// ============================================================
+// BACKUP & RESTORE (CSV)
+// ============================================================
+function backupLog() {
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('quote:'));
+  if (!keys.length) { notify('No quotes to back up.'); return; }
+
+  // Build CSV — each row is one quote, full JSON state in last column
+  const header = ['id','refNo','client','jobTitle','type','date','total','saved','state_json'];
+  const rows = keys.map(k => {
+    try {
+      const e = JSON.parse(localStorage.getItem(k));
+      const safeJson = JSON.stringify(e).replace(/"/g, '""'); // escape quotes for CSV
+      return [
+        e.id,
+        '"' + (e.refNo || '').replace(/"/g,'""') + '"',
+        '"' + (e.client || '').replace(/"/g,'""') + '"',
+        '"' + (e.jobTitle || '').replace(/"/g,'""') + '"',
+        e.type || '',
+        e.date || '',
+        (e.total || 0).toFixed(2),
+        e.saved || '',
+        '"' + safeJson + '"'
+      ].join(',');
+    } catch(err) { return null; }
+  }).filter(Boolean);
+
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = 'FabLab_QuoteLog_Backup_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  notify('Backup downloaded — ' + rows.length + ' quote(s).');
+}
+
+function restoreLog(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const lines = e.target.result.split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) { notify('File appears empty.'); return; }
+
+      // Parse CSV — last column is full JSON, may contain commas inside quotes
+      let imported = 0, skipped = 0, updated = 0;
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          // Find the last quoted JSON column by locating the opening of the last "{"
+          const line = lines[i];
+          // The state_json column starts after the 8th comma (columns 0-7), quoted
+          // Find the first " after the 8th comma
+          let commaCount = 0, jsonStart = -1;
+          for (let c = 0; c < line.length; c++) {
+            if (line[c] === ',' && commaCount < 8) {
+              commaCount++;
+              if (commaCount === 8) { jsonStart = c + 2; break; } // skip the opening quote
+            }
+          }
+          if (jsonStart < 0) { skipped++; continue; }
+          // The JSON runs to the last character minus the closing quote
+          const rawJson = line.slice(jsonStart, line.length - 1).replace(/""/g, '"');
+          const entry = JSON.parse(rawJson);
+          if (!entry.id) { skipped++; continue; }
+
+          const key = 'quote:' + entry.id;
+          const existing = localStorage.getItem(key);
+          if (existing) { updated++; } else { imported++; }
+          localStorage.setItem(key, JSON.stringify(entry));
+        } catch(lineErr) { skipped++; }
+      }
+
+      renderLog();
+      updateFYSummary();
+      const msg = imported + ' imported, ' + updated + ' updated' + (skipped ? ', ' + skipped + ' skipped' : '') + '.';
+      notify('Restore complete — ' + msg);
+    } catch(parseErr) {
+      notify('Could not read backup file. Make sure it\'s a valid CSV backup.');
+    }
+    // Reset file input so the same file can be re-selected
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // ============================================================
