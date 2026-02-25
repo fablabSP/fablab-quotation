@@ -914,34 +914,40 @@
           </div>
         </div>
 
-        <!-- RATE CONFIGURATION — always visible -->
-        <div style="border-top:2px solid var(--border);margin-top:4px;padding-top:12px;">
-          <div style="font-size:11px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Charge Rates</div>
+        <!-- RATE CONFIGURATION — visibility controlled by quote type -->
+        <div id="chargeRatesWrap" style="display:none;border-top:2px solid var(--border);margin-top:4px;padding-top:12px;">
+
+          <!-- Header row: title + lock button (external) or enable toggle (workshop) -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);">Charge Rates</div>
+            <!-- External: lock/unlock edit button -->
+            <button id="rateEditBtn" onclick="toggleRateEdit()" style="display:none;font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;font-weight:700;">🔒 Edit</button>
+            <!-- Workshop: enable/disable toggle -->
+            <div id="workshopChargeToggle" style="display:none;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);">
+              <span>Apply charges</span>
+              <label class="toggle"><input type="checkbox" id="workshopChargesEnabled" checked onchange="calcTotal()"><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+
           <div class="form-row form-row-3">
             <div class="form-group">
-              <label style="display:flex;align-items:center;gap:5px;">
-                SP Charges
-                <span style="font-size:10px;color:var(--text-light);font-weight:400;">(External / Workshop)</span>
-              </label>
+              <label>SP Charges</label>
               <div style="display:flex;align-items:center;gap:4px;">
-                <input type="number" id="rateSP" value="18.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()">
+                <input type="number" id="rateSP" value="18.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()" readonly>
                 <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
               </div>
             </div>
             <div class="form-group">
-              <label style="display:flex;align-items:center;gap:5px;">
-                TIE Charges
-
-              </label>
+              <label>TIE Charges</label>
               <div style="display:flex;align-items:center;gap:4px;">
-                <input type="number" id="rateTIE" value="11.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()">
+                <input type="number" id="rateTIE" value="11.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()" readonly>
                 <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
               </div>
             </div>
             <div class="form-group">
               <label>GST</label>
               <div style="display:flex;align-items:center;gap:4px;">
-                <input type="number" id="rateGST" value="9" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()">
+                <input type="number" id="rateGST" value="9" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()" readonly>
                 <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
               </div>
             </div>
@@ -1158,7 +1164,7 @@
       <span class="modal-toolbar-title">Quote Preview</span>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary btn-sm" onclick="printDocOnly()">🖨 Print</button>
-        <button class="btn btn-secondary btn-sm" onclick="saveDocAsPDF()">💾 Save PDF</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveFromPreview(); closePreview();">💾 Save to Log</button>
         <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:#444;" onclick="closePreview()">✕ Close</button>
       </div>
     </div>
@@ -1290,8 +1296,14 @@ function addLineItem() {
           </select>
         </div>
         <div class="form-group">
-          <label>Hours / Item</label>
-          <input type="number" id="li-hrs-${id}" value="0" min="0" step="0.25" oninput="calcTotal()">
+          <label>Time / Item</label>
+          <div style="display:flex;gap:4px;">
+            <input type="number" id="li-hrs-${id}" value="0" min="0" step="0.25" style="width:100%;" oninput="calcTotal()">
+            <select id="li-hrsunit-${id}" onchange="updateHrsStep(${id}); calcTotal()" style="width:80px;flex-shrink:0;">
+              <option value="hrs">hrs</option>
+              <option value="mins">mins</option>
+            </select>
+          </div>
         </div>
         <div class="form-group">
           <label>Quantity</label>
@@ -1424,6 +1436,25 @@ function sizeThickFields(id, sizes, thicknesses, defaultSize) {
   </div>`;
 }
 
+function updateHrsStep(id) {
+  const unit = document.getElementById('li-hrsunit-' + id)?.value;
+  const inp  = document.getElementById('li-hrs-' + id);
+  if (!inp) return;
+  if (unit === 'mins') {
+    inp.step = '1';
+    inp.min  = '0';
+    // Convert any existing value from hrs to mins
+    const cur = parseFloat(inp.value) || 0;
+    if (cur > 0 && cur < 10) inp.value = Math.round(cur * 60);
+  } else {
+    inp.step = '0.25';
+    inp.min  = '0';
+    // Convert any existing value from mins to hrs
+    const cur = parseFloat(inp.value) || 0;
+    if (cur >= 10) inp.value = (cur / 60).toFixed(2);
+  }
+}
+
 function updateVinylPrice(id) {
   const tier = document.getElementById('li-tier-'+id)?.value || 'small';
   const prices = { small:20, medium:45, large:85, xlarge:200 };
@@ -1544,6 +1575,33 @@ function updateQuoteType() {
   if (designFields) designFields.style.display = isWorkshop ? 'none' : '';
   if (expeditedFields) expeditedFields.style.display = isWorkshop ? 'none' : '';
 
+  // Charge Rates section — hidden for internal, locked for external, togglable for workshop
+  const crWrap = document.getElementById('chargeRatesWrap');
+  const rateEditBtn = document.getElementById('rateEditBtn');
+  const workshopChargeToggle = document.getElementById('workshopChargeToggle');
+  const rateInputs = ['rateSP','rateTIE','rateGST'].map(id => document.getElementById(id));
+
+  if (isInternal) {
+    if (crWrap) crWrap.style.display = 'none';
+  } else if (isExternal) {
+    if (crWrap) crWrap.style.display = '';
+    if (rateEditBtn) rateEditBtn.style.display = '';
+    if (workshopChargeToggle) workshopChargeToggle.style.display = 'none';
+    // Lock inputs, reset edit button to locked state
+    rateInputs.forEach(el => { if (el) el.readOnly = true; });
+    if (rateEditBtn) {
+      rateEditBtn.textContent = '🔒 Edit';
+      rateEditBtn.style.color = 'var(--text-muted)';
+      rateEditBtn.style.borderColor = 'var(--border)';
+    }
+  } else if (isWorkshop) {
+    if (crWrap) crWrap.style.display = '';
+    if (rateEditBtn) rateEditBtn.style.display = 'none';
+    if (workshopChargeToggle) { workshopChargeToggle.style.display = ''; workshopChargeToggle.style.display = 'flex'; }
+    // Unlock inputs for workshop (toggle controls whether charges apply)
+    rateInputs.forEach(el => { if (el) el.readOnly = false; });
+  }
+
   // Colour-code main panel
   const mainEl = document.querySelector('.main');
   if (mainEl) {
@@ -1562,7 +1620,9 @@ function calcMaterialCost(id) {
   if (!type) return { mat: 0, machine: 0, hrs: 0, desc: '' };
 
   const qty = parseInt(document.getElementById(`li-qty-${id}`)?.value || 1);
-  const hrsPerItem = parseFloat(document.getElementById(`li-hrs-${id}`)?.value || 0);
+  const hrsRaw = parseFloat(document.getElementById(`li-hrs-${id}`)?.value || 0);
+  const hrsUnit = document.getElementById(`li-hrsunit-${id}`)?.value || 'hrs';
+  const hrsPerItem = hrsUnit === 'mins' ? hrsRaw / 60 : hrsRaw;
   const totalHrs = hrsPerItem * qty;
   const machine = document.getElementById(`li-machine-${id}`)?.value;
   const machineCost = totalHrs * (MACHINE_RATES[machine] || 0);
@@ -1703,7 +1763,8 @@ function calcTotal() {
   const rateGSTpct = parseFloat(document.getElementById('rateGST')?.value || 9);
   let spCharge = 0, tieFee = 0, gst = 0, grand = subtotal;
   let costExclGST = subtotal, costInclGST = subtotal;
-  if (isExternal || isWorkshopType) {
+  const workshopChargesOn = !isWorkshopType || (document.getElementById('workshopChargesEnabled')?.checked !== false);
+  if (isExternal || (isWorkshopType && workshopChargesOn)) {
     spCharge    = subtotal * rateSP;
     tieFee      = subtotal * rateTIE;
     costExclGST = subtotal + spCharge;
@@ -1755,6 +1816,21 @@ function calcTotal() {
   if (qTypeNow === 'workshop') getWorkshopDateInfo();
 
   window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct };
+}
+
+// ============================================================
+// CHARGE RATE EDIT TOGGLE (external only)
+// ============================================================
+function toggleRateEdit() {
+  const inputs = ['rateSP','rateTIE','rateGST'].map(id => document.getElementById(id));
+  const btn = document.getElementById('rateEditBtn');
+  const isLocked = inputs[0]?.readOnly;
+  inputs.forEach(el => { if (el) el.readOnly = !isLocked; });
+  if (btn) {
+    btn.textContent = isLocked ? '🔓 Editing' : '🔒 Edit';
+    btn.style.color  = isLocked ? 'var(--accent)' : 'var(--text-muted)';
+    btn.style.borderColor = isLocked ? 'var(--accent)' : 'var(--border)';
+  }
 }
 
 // ============================================================
@@ -2188,6 +2264,11 @@ function printWithTitle(content, title, isFullDoc) {
   }
 }
 
+function saveFromPreview() {
+  saveQuote();
+  closePreview();
+}
+
 function printDocOnly() {
   // Open in new tab and trigger browser print dialog (Ctrl+P style)
   const content = document.getElementById('quoteDocContent').innerHTML;
@@ -2236,6 +2317,8 @@ function collectFormState() {
     rateSP:    document.getElementById('rateSP')?.value,
     rateTIE:   document.getElementById('rateTIE')?.value,
     rateGST:   document.getElementById('rateGST')?.value,
+    workshopChargesEnabled: document.getElementById('workshopChargesEnabled')?.checked,
+    rateEditUnlocked: document.getElementById('rateSP')?.readOnly === false && document.querySelector('input[name="quoteType"]:checked')?.value === 'external',
     // Workshop
     overallCoursePrice: document.getElementById('overallCoursePrice')?.value,
     overallCoursePriceNote: document.getElementById('overallCoursePriceNote')?.value,
@@ -2262,6 +2345,7 @@ function collectFormState() {
       desc:    document.getElementById('li-desc-'+id)?.value || '',
       type:    matType,
       hrs:     document.getElementById('li-hrs-'+id)?.value || '0',
+      hrsunit: document.getElementById('li-hrsunit-'+id)?.value || 'hrs',
       qty:     document.getElementById('li-qty-'+id)?.value || '1',
       machine: document.getElementById('li-machine-'+id)?.value || '',
       size:    document.getElementById('li-size-'+id)?.value,
@@ -2496,10 +2580,48 @@ function restoreAndPreview(id) {
 }
 
 function deleteLogEntry(id) {
-  if (!confirm('Delete this saved quote? This cannot be undone.')) return;
+  // Find the log item and show inline confirm to avoid browser blocking confirm()
+  const allBtns = document.querySelectorAll('[onclick^="deleteLogEntry"]');
+  let targetRow = null;
+  allBtns.forEach(btn => {
+    if (btn.getAttribute('onclick') === `deleteLogEntry(${id})`) targetRow = btn.closest('.log-item');
+  });
+  if (targetRow) {
+    // Check if already showing confirm
+    if (targetRow.querySelector('.delete-confirm-row')) {
+      // Second click — already shown, do nothing
+      return;
+    }
+    const confirmDiv = document.createElement('div');
+    confirmDiv.className = 'delete-confirm-row';
+    confirmDiv.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;font-size:12px;color:#991b1b;';
+    confirmDiv.innerHTML = `<span style="flex:1;">⚠️ Delete this quote permanently?</span>
+      <button class="btn btn-danger btn-sm" onclick="confirmDeleteLogEntry(${id})">Yes, delete</button>
+      <button class="btn btn-ghost btn-sm" style="border-color:#fca5a5;color:#991b1b;" onclick="cancelDeleteLogEntry(${id})">Cancel</button>`;
+    targetRow.appendChild(confirmDiv);
+  } else {
+    // Fallback if row not found
+    if (!window.confirm('Delete this saved quote? This cannot be undone.')) return;
+    try { localStorage.removeItem('quote:' + id); } catch(e) {}
+    renderLog();
+    notify('Quote deleted.');
+  }
+}
+
+function confirmDeleteLogEntry(id) {
   try { localStorage.removeItem('quote:' + id); } catch(e) {}
   renderLog();
   notify('Quote deleted.');
+}
+
+function cancelDeleteLogEntry(id) {
+  const allBtns = document.querySelectorAll('[onclick^="deleteLogEntry"]');
+  allBtns.forEach(btn => {
+    if (btn.getAttribute('onclick') === `deleteLogEntry(${id})`) {
+      const row = btn.closest('.log-item')?.querySelector('.delete-confirm-row');
+      if (row) row.remove();
+    }
+  });
 }
 
 function generateDO(id) {
@@ -2729,6 +2851,8 @@ function restoreFormState(state) {
   if (state.rateSP)  { const el = document.getElementById('rateSP');  if(el) el.value = state.rateSP; }
   if (state.rateTIE) { const el = document.getElementById('rateTIE'); if(el) el.value = state.rateTIE; }
   if (state.rateGST) { const el = document.getElementById('rateGST'); if(el) el.value = state.rateGST; }
+  const wce = document.getElementById('workshopChargesEnabled');
+  if (wce && state.workshopChargesEnabled !== undefined) wce.checked = state.workshopChargesEnabled;
 
   // Workshop overall price & dates
   if (document.getElementById('overallCoursePrice'))     document.getElementById('overallCoursePrice').value = state.overallCoursePrice || '';
@@ -2770,6 +2894,8 @@ function restoreFormState(state) {
       document.getElementById('li-desc-'+id).value = item.desc || '';
       document.getElementById('li-qty-'+id).value  = item.qty  || '1';
       document.getElementById('li-hrs-'+id).value  = item.hrs  || '0';
+      const hrsUnitEl = document.getElementById('li-hrsunit-'+id);
+      if (hrsUnitEl && item.hrsunit) hrsUnitEl.value = item.hrsunit;
       if (item.type) {
         document.getElementById('li-type-'+id).value = item.type;
         onMaterialChange(id);
@@ -2822,11 +2948,10 @@ function duplicateEntry(id) {
     switchTab('builder', builderTab);
     // Restore form state
     restoreFormState(entry.formState);
-    // Generate a fresh ref number so it's clearly a new quote
+    // Update date to today, but leave ref no as-is (staff fills it in)
     const today = new Date();
     document.getElementById('quoteDate').value = today.toISOString().split('T')[0];
-    const newRef = today.getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
-    document.getElementById('refNo').value = newRef;
+    document.getElementById('refNo').value = '';
     notify('Quote duplicated — update the Ref No. and client details as needed.');
   } catch(e) {
     console.error('duplicateEntry error:', e);
@@ -2897,9 +3022,11 @@ function resetForm() {
   if (pd) pd.value = '';
 
   // ── Rate defaults ─────────────────────────────────────────────
-  const rSP  = document.getElementById('rateSP');  if (rSP)  rSP.value  = '18.5';
-  const rTIE = document.getElementById('rateTIE'); if (rTIE) rTIE.value = '11.5';
-  const rGST = document.getElementById('rateGST'); if (rGST) rGST.value = '9';
+  const rSP  = document.getElementById('rateSP');  if (rSP)  { rSP.value  = '18.5'; rSP.readOnly  = true; }
+  const rTIE = document.getElementById('rateTIE'); if (rTIE) { rTIE.value = '11.5'; rTIE.readOnly = true; }
+  const rGST = document.getElementById('rateGST'); if (rGST) { rGST.value = '9';    rGST.readOnly = true; }
+  const reb  = document.getElementById('rateEditBtn'); if (reb) { reb.textContent = '🔒 Edit'; reb.style.color = 'var(--text-muted)'; reb.style.borderColor = 'var(--border)'; }
+  const wce2 = document.getElementById('workshopChargesEnabled'); if (wce2) wce2.checked = true;
 
   // ── Workshop / Course fields ──────────────────────────────────
   // Reset date mode to continuous
