@@ -824,6 +824,12 @@
                 <input type="text" id="expeditedDisplay" readonly>
               </div>
             </div>
+            <div style="margin-top:6px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-muted);">
+                <input type="checkbox" id="expeditedOnProjExp" onchange="calcTotal()" style="width:15px;height:15px;cursor:pointer;">
+                Also apply surcharge on Project Expenses
+              </label>
+            </div>
           </div>
         </div>
 
@@ -881,19 +887,14 @@
               <div class="toggle-label">Project Expenses</div>
               <div class="toggle-desc">Miscellaneous project costs</div>
             </div>
-            <label class="toggle"><input type="checkbox" id="toggleProjExp" onchange="toggleSection('projExpFields')"><span class="toggle-slider"></span></label>
+            <label class="toggle"><input type="checkbox" id="toggleProjExp" onchange="toggleSection('projExpFields'); if(this.checked && document.getElementById('projExpItems').children.length===0) addProjExpItem();"><span class="toggle-slider"></span></label>
           </div>
           <div class="conditional" id="projExpFields">
             <div class="conditional-inner">
-              <div class="form-row">
-                <div class="form-group" style="flex:1;">
-                  <label>Project Expenses ($)</label>
-                  <input type="number" id="projExpAmount" value="0" min="0" step="0.01" oninput="calcTotal()">
-                </div>
-                <div class="form-group" style="flex:2;">
-                  <label>Description</label>
-                  <input type="text" id="projExpDesc" placeholder="e.g. Materials, transport, printing" oninput="calcTotal()">
-                </div>
+              <div id="projExpItems"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                <button class="btn btn-ghost btn-sm" onclick="addProjExpItem()" style="font-size:12px;">＋ Add Expense Line</button>
+                <div style="font-size:12px;color:var(--text-muted);">Total: <strong id="projExpTotal" style="color:var(--text);">$0.00</strong></div>
               </div>
             </div>
           </div>
@@ -937,8 +938,14 @@
               </div>
             </div>
           </div>
+          <!-- Force SP/TIE when no staff charges -->
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-muted);">
+              <input type="checkbox" id="forceSpTie" onchange="calcTotal()" style="width:14px;height:14px;cursor:pointer;">
+              Apply SP &amp; TIE charges even without Staff Charges
+            </label>
+          </div>
         </div>
-
 
       </div>
     </div>
@@ -1715,13 +1722,18 @@ function calcTotal() {
   const projExpOn = document.getElementById('toggleProjExp')?.checked;
   let projExpAmount = 0;
   if (projExpOn) {
-    projExpAmount = parseFloat(document.getElementById('projExpAmount')?.value||0);
+    const peItems = getProjExpItems();
+    projExpAmount = peItems.reduce((sum, it) => sum + it.amount, 0);
+    const pet = document.getElementById('projExpTotal');
+    if (pet) pet.textContent = '$' + projExpAmount.toFixed(2);
   }
   subtotal += projExpAmount;
 
   const expedited = document.getElementById('toggleExpedited').checked;
   const expeditedPct = parseFloat(document.getElementById('expeditedPct')?.value||50) / 100;
-  const expeditedFee = expedited ? (totalMat + totalMachine) * expeditedPct : 0;
+  const expeditedOnProjExp = document.getElementById('expeditedOnProjExp')?.checked;
+  const expeditedBase = (totalMat + totalMachine) + (expeditedOnProjExp ? projExpAmount : 0);
+  const expeditedFee = expedited ? expeditedBase * expeditedPct : 0;
   const expPctLabel = document.getElementById('expeditedPct')?.value || '50';
   if (expedited) { const ed = document.getElementById('expeditedDisplay'); if(ed) ed.value = '$' + expeditedFee.toFixed(2); }
   subtotal += expeditedFee;
@@ -1747,18 +1759,23 @@ function calcTotal() {
   let spCharge = 0, tieFee = 0, gst = 0, grand = subtotal;
   let costExclGST = subtotal, costInclGST = subtotal;
   const workshopChargesOn = !isWorkshopType || (document.getElementById('workshopChargesEnabled')?.checked !== false);
+  const forceSpTie = document.getElementById('forceSpTie')?.checked;
+  const spTieApplies = staffCost > 0 || forceSpTie;
   if (isExternal || (isWorkshopType && workshopChargesOn)) {
     // Correct formula:
-    //   Overall Project Fee (excl. GST) = nonStaffSubtotal + ROUND(staffCost / 0.7, 2)
-    //   SP and TIE are informational breakdowns of the grossed-up staff cost
+    //   Overall Project Fee (excl. GST) = nonStaffSubtotal + ROUNDUP(staffCost / 0.7, 2)
+    //   SP and TIE only apply when there are staff charges OR forceSpTie is checked
     const nonStaffSubtotal = subtotal - staffCost;
     const grossedStaff = staffCost > 0 ? Math.ceil(staffCost / 0.7 * 100) / 100 : 0;
-    costExclGST = nonStaffSubtotal + grossedStaff;
-    // Informational breakdown of the uplift (grossedStaff - staffCost = overhead)
-    // SP and TIE are portions of the grossed-up base shown for staff reference only
-    const grossBase = staffCost > 0 ? grossedStaff : subtotal;
-    spCharge = grossBase * rateSP;   // staff reference only
-    tieFee   = grossBase * rateTIE;  // staff reference only
+    if (spTieApplies) {
+      const grossBase = staffCost > 0 ? grossedStaff : subtotal;
+      spCharge = grossBase * rateSP;
+      tieFee   = grossBase * rateTIE;
+      costExclGST = staffCost > 0 ? (nonStaffSubtotal + grossedStaff) : subtotal;
+    } else {
+      // No staff, no force — no SP/TIE, just subtotal
+      costExclGST = subtotal;
+    }
     gst         = costExclGST * rateGST;
     costInclGST = costExclGST + gst;
     grand       = costInclGST;
@@ -1778,7 +1795,14 @@ function calcTotal() {
   if (workshopTotal > 0) lines.push(['Course Fee', workshopTotal]);
   if (helperCost > 0) lines.push(['Student Helpers', helperCost]);
   if (staffCost > 0) lines.push(['Staff Charges', staffCost]);
-  if (projExpAmount > 0) lines.push(['Project Expenses', projExpAmount]);
+  if (projExpAmount > 0) {
+    const peItems = getProjExpItems();
+    if (peItems.length === 1) {
+      lines.push([peItems[0].desc || 'Project Expenses', peItems[0].amount]);
+    } else if (peItems.length > 1) {
+      lines.push(['Project Expenses', projExpAmount]);
+    }
+  }
   if (expeditedFee > 0) lines.push([`Expedited (${expPctLabel}%)`, expeditedFee]);
   if (designFee > 0) lines.push(['Design Fee', designFee]);
   if (isExternal || (isWorkshopType && workshopChargesOn)) {
@@ -1897,6 +1921,51 @@ function getStaffItems() {
     const count = parseInt(document.getElementById('staff-count-'+id)?.value   || 1);
     const role  = document.getElementById('staff-role-'+id)?.value || '';
     items.push({ id, role, rate, hrs, count, sub: rate * hrs * count });
+  });
+  return items;
+}
+
+// ============================================================
+// PROJECT EXPENSES — multi-item
+// ============================================================
+let projExpItemCount = 0;
+
+function addProjExpItem(desc, amount) {
+  projExpItemCount++;
+  const id = projExpItemCount;
+  const div = document.createElement('div');
+  div.id = 'projexp-item-' + id;
+  div.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;';
+  div.innerHTML = `
+    <div class="form-row">
+      <div class="form-group" style="flex:2;">
+        <label>Description</label>
+        <input type="text" id="projexp-desc-${id}" placeholder="e.g. Transport, printing" value="${desc||''}" oninput="calcTotal()">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label>Amount ($)</label>
+        <input type="number" id="projexp-amt-${id}" value="${amount||0}" min="0" step="0.01" oninput="calcTotal()">
+      </div>
+      <div class="form-group" style="flex:0 0 28px;display:flex;align-items:flex-end;padding-bottom:2px;">
+        <button onclick="removeProjExpItem(${id})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:0;line-height:1;" title="Remove">✕</button>
+      </div>
+    </div>`;
+  document.getElementById('projExpItems').appendChild(div);
+}
+
+function removeProjExpItem(id) {
+  const el = document.getElementById('projexp-item-' + id);
+  if (el) el.remove();
+  calcTotal();
+}
+
+function getProjExpItems() {
+  const items = [];
+  document.querySelectorAll('[id^="projexp-item-"]').forEach(div => {
+    const id = div.id.replace('projexp-item-','');
+    const desc   = document.getElementById('projexp-desc-'+id)?.value || '';
+    const amount = parseFloat(document.getElementById('projexp-amt-'+id)?.value || 0);
+    items.push({ id, desc, amount });
   });
   return items;
 }
@@ -2170,9 +2239,13 @@ function buildQuoteDoc() {
     });
   }
   if (projExpOn && d.projExpAmount > 0) {
-    const expDesc = document.getElementById('projExpDesc')?.value || 'Project Expenses';
-    extraRows += '<tr><td>' + expDesc + '<div class="qdoc-desc-detail">Project Expenses</div></td>'
-      + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + d.projExpAmount.toFixed(2) + '</td></tr>';
+    const peItems = getProjExpItems();
+    peItems.forEach(it => {
+      if (it.amount > 0 || it.desc) {
+        extraRows += '<tr><td>' + (it.desc || 'Project Expense') + '</td>'
+          + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + it.amount.toFixed(2) + '</td></tr>';
+      }
+    });
   }
 
   const allRows = (isWorkshop ? workshopRows : rows) + extraRows;
@@ -2397,19 +2470,20 @@ function collectFormState() {
     designMode:    document.getElementById('designMode')?.value,
     designValue:   document.getElementById('designValue')?.value,
     expeditedOn:   document.getElementById('toggleExpedited').checked,
-    expeditedPct:  document.getElementById('expeditedPct')?.value,
+    expeditedPct:       document.getElementById('expeditedPct')?.value,
+    expeditedOnProjExp: document.getElementById('expeditedOnProjExp')?.checked,
     helpersOn:     document.getElementById('toggleHelpers').checked,
     helperCount:   document.getElementById('helperCount')?.value,
     helperHours:   document.getElementById('helperHours')?.value,
     staffOn:       document.getElementById('toggleStaff')?.checked,
     staffItems:    getStaffItems(),
     projExpOn:     document.getElementById('toggleProjExp')?.checked,
-    projExpAmount: document.getElementById('projExpAmount')?.value,
-    projExpDesc:   document.getElementById('projExpDesc')?.value,
+    projExpItems:  getProjExpItems(),
     rateSP:    document.getElementById('rateSP')?.value,
     rateTIE:   document.getElementById('rateTIE')?.value,
     rateGST:   document.getElementById('rateGST')?.value,
     workshopChargesEnabled: document.getElementById('workshopChargesEnabled')?.checked,
+    forceSpTie:             document.getElementById('forceSpTie')?.checked,
     rateEditUnlocked: document.getElementById('rateSP')?.readOnly === false && document.querySelector('input[name="quoteType"]:checked')?.value === 'external',
     // Workshop
     overallCoursePrice: document.getElementById('overallCoursePrice')?.value,
@@ -2518,7 +2592,7 @@ function collectItems() {
   }
   // Project expenses
   if (document.getElementById('toggleProjExp')?.checked) {
-    const expDesc = document.getElementById('projExpDesc')?.value || 'Project Expenses';
+    const expDesc = 'Project Expenses';
     items.push({ desc: expDesc, qty: '1', detail: 'Project Expenses' });
   }
   return items;
@@ -2922,6 +2996,7 @@ function restoreFormState(state) {
 
   setToggle('toggleExpedited', state.expeditedOn,  'expeditedFields');
   if (state.expeditedPct) { const ep = document.getElementById('expeditedPct'); if(ep) ep.value = state.expeditedPct; }
+  const eope = document.getElementById('expeditedOnProjExp'); if (eope) eope.checked = !!state.expeditedOnProjExp;
 
   setToggle('toggleHelpers',   state.helpersOn,   'helperFields');
   if (state.helperCount) { const hc = document.getElementById('helperCount'); if(hc) hc.value = state.helperCount; }
@@ -2937,15 +3012,23 @@ function restoreFormState(state) {
     addStaffItem('', state.staffRate || 0, state.staffHours || 0, state.staffCount || 1);
   }
 
-  setToggle('toggleProjExp',   state.projExpOn,   'projExpFields');
-  if (state.projExpAmount) { const pa = document.getElementById('projExpAmount'); if(pa) pa.value = state.projExpAmount; }
-  if (state.projExpDesc)   { const pd = document.getElementById('projExpDesc');   if(pd) pd.value = state.projExpDesc; }
+  setToggle('toggleProjExp', state.projExpOn, 'projExpFields');
+  document.getElementById('projExpItems').innerHTML = '';
+  projExpItemCount = 0;
+  if (state.projExpItems && state.projExpItems.length) {
+    state.projExpItems.forEach(it => addProjExpItem(it.desc, it.amount));
+  } else if (state.projExpOn) {
+    // Legacy restore — single amount/desc
+    addProjExpItem(state.projExpDesc || '', state.projExpAmount || 0);
+  }
 
   if (state.rateSP)  { const el = document.getElementById('rateSP');  if(el) el.value = state.rateSP; }
   if (state.rateTIE) { const el = document.getElementById('rateTIE'); if(el) el.value = state.rateTIE; }
   if (state.rateGST) { const el = document.getElementById('rateGST'); if(el) el.value = state.rateGST; }
   const wce = document.getElementById('workshopChargesEnabled');
   if (wce && state.workshopChargesEnabled !== undefined) wce.checked = state.workshopChargesEnabled;
+  const fst = document.getElementById('forceSpTie');
+  if (fst) fst.checked = !!state.forceSpTie;
 
   // Workshop overall price & dates
   if (document.getElementById('overallCoursePrice'))     document.getElementById('overallCoursePrice').value = state.overallCoursePrice || '';
@@ -3105,10 +3188,8 @@ function resetForm() {
   staffItemCount = 0;
 
   // ── Project expenses defaults ─────────────────────────────────
-  const pe = document.getElementById('projExpAmount');
-  if (pe) pe.value = '0';
-  const pd = document.getElementById('projExpDesc');
-  if (pd) pd.value = '';
+  document.getElementById('projExpItems').innerHTML = '';
+  projExpItemCount = 0;
 
   // ── Rate defaults ─────────────────────────────────────────────
   const rSP  = document.getElementById('rateSP');  if (rSP)  { rSP.value  = '18.5'; rSP.readOnly  = true; }
@@ -3116,6 +3197,7 @@ function resetForm() {
   const rGST = document.getElementById('rateGST'); if (rGST) { rGST.value = '9';    rGST.readOnly = true; }
   const reb  = document.getElementById('rateEditBtn'); if (reb) { reb.textContent = '🔒 Edit'; reb.style.color = 'var(--text-muted)'; reb.style.borderColor = 'var(--border)'; }
   const wce2 = document.getElementById('workshopChargesEnabled'); if (wce2) wce2.checked = true;
+  const fst2 = document.getElementById('forceSpTie'); if (fst2) fst2.checked = false;
 
   // ── Workshop / Course fields ──────────────────────────────────
   // Reset date mode to continuous
