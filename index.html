@@ -1793,7 +1793,10 @@ function calcTotal() {
   if (totalMachine > 0) lines.push(['Machine Cost', totalMachine]);
   if (accTotal > 0) lines.push(['Accessories', accTotal]);
   if (workshopTotal > 0) lines.push(['Course Fee', workshopTotal]);
-  if (helperCost > 0) lines.push(['Student Helpers', helperCost]);
+  if (helperCost > 0) {
+    const hCount = parseInt(document.getElementById('helperCount')?.value||1);
+    lines.push(['Student Helper/Agent' + (hCount > 1 ? ' × ' + hCount : ''), helperCost]);
+  }
   if (staffCost > 0) lines.push(['Staff Charges', staffCost]);
   if (projExpAmount > 0) {
     const peItems = getProjExpItems();
@@ -1847,7 +1850,8 @@ function calcTotal() {
     }
   }
 
-  window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct, workshopChargesOn };
+  const helperCountVal = parseInt(document.getElementById('helperCount')?.value||1);
+  window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, helperCount: helpersOn ? helperCountVal : 0, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct, workshopChargesOn };
 }
 
 // ============================================================
@@ -2255,7 +2259,7 @@ function buildQuoteDoc() {
   // Combined SP+TIE overhead shown on client quote = grossed amount minus staff cost
   const combinedSPTIE = (d.spCharge || 0) + (d.tieFee || 0);
   const totalRowsArr = [
-    (d.helperCost > 0 && !isWorkshop) ? ['Student Helpers / Agent', d.helperCost] : null,
+    (d.helperCost > 0 && !isWorkshop) ? ['Student Helper/Agent' + (d.helperCount > 1 ? ' × ' + d.helperCount : ''), d.helperCost] : null,
     (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work (' + (d.expPctLabel||50) + '%)', d.expeditedFee] : null,
     (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
     // Show combined SP+TIE as a single "SP Charges" line on the client quote
@@ -2621,6 +2625,7 @@ function saveQuote() {
           refNo,
           date: document.getElementById('quoteDate').value,
           total: d.grand || 0,
+          helperCount: d.helperCount || 0,
           items: collectItems(),
           formState: collectFormState(),
           snapshot,
@@ -2647,6 +2652,7 @@ function saveQuote() {
     refNo,
     date: document.getElementById('quoteDate').value,
     total: d.grand || 0,
+    helperCount: d.helperCount || 0,
     items: collectItems(),
     formState: collectFormState(),
     snapshot,
@@ -3615,16 +3621,20 @@ function renderFYSummary(entries) {
 
   const totals = { internal:0, external:0, workshop:0 };
   let grand = 0;
+  let totalHelpers = 0;
   fyEntries.forEach(e => {
     totals[e.type] = (totals[e.type] || 0) + (e.total || 0);
     grand += (e.total || 0);
+    totalHelpers += (e.helperCount || 0);
   });
 
   const summaryLines = document.getElementById('fySummaryLines');
   if (summaryLines) {
-    summaryLines.innerHTML = [
-      ['Quotes in period', fyEntries.length + ' quotes'],
-    ].map(([l,v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
+    const fyRows = [
+      ['Quotes in period', fyEntries.length + ' quote' + (fyEntries.length !== 1 ? 's' : '')],
+    ];
+    if (totalHelpers > 0) fyRows.push(['Student Helpers/Agents involved', totalHelpers + ' student' + (totalHelpers !== 1 ? 's' : '')]);
+    summaryLines.innerHTML = fyRows.map(([l,v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
       <span style="color:var(--text-muted);">${l}</span><span style="font-weight:700;">${v}</span></div>`).join('');
   }
 
