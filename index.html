@@ -2693,19 +2693,17 @@ function saveAndPrint() { saveQuote(); }
 // The list "FabLabQuotes" must exist on the same site.
 // ============================================================
 
-function getSPContext() {
-  // _spPageContextInfo is injected by SharePoint when the page is loaded inside SP
-  if (typeof _spPageContextInfo !== 'undefined') {
-    return {
-      siteUrl: _spPageContextInfo.webAbsoluteUrl,
-      digest: document.getElementById('__REQUESTDIGEST')?.value || ''
-    };
-  }
-  // Fallback for dev/testing: prompt for site URL
-  const siteUrl = window.__SP_SITE_URL__ || prompt('Enter SharePoint site URL (e.g. https://tenant.sharepoint.com/sites/mysite):');
-  if (siteUrl) window.__SP_SITE_URL__ = siteUrl;
-  return { siteUrl: siteUrl || '', digest: '' };
-}
+// ============================================================
+// POWER AUTOMATE FLOW URLS — replace SharePoint direct calls
+// ============================================================
+const PA_FLOWS = {
+  saveQuote:   'https://default7604ff02abd845db8cac550054323f.c9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a7bc9b4efb734c47b89720b218d0f27e/triggers/manual/paths/invoke?api-version=1',
+  getQuotes:   'https://default7604ff02abd845db8cac550054323f.c9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/68c3c56a7bea49ef8da6d1da91f30afb/triggers/manual/paths/invoke?api-version=1',
+  deleteQuote: 'https://default7604ff02abd845db8cac550054323f.c9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2a6f776b53f4414989eae18e5a07d65e/triggers/manual/paths/invoke?api-version=1'
+};
+
+// getSPContext kept for compatibility but no longer used for list operations
+function getSPContext() { return { siteUrl: '' }; }
 
 async function getSPDigest(siteUrl) {
   // Refresh the form digest (required for write operations outside of SP page context)
@@ -2748,70 +2746,55 @@ async function spRequest(method, url, body, digest) {
 const SP_LIST = 'FabLabQuotes';
 
 async function saveToLog(entry) {
-  const { siteUrl } = getSPContext();
-  if (!siteUrl) { notify('⚠️ SharePoint site URL not available. Quote not saved to log.'); return; }
+  if (!PA_FLOWS.saveQuote) { notify('⚠️ Save flow URL not configured.'); return; }
   try {
-    const digest = await getSPDigest(siteUrl);
-    const listUrl = siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items";
-
-    // Check if item already exists (editing) by querying Title = entry.id
-    const checkUrl = siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items?$filter=QuoteID eq '" + entry.id + "'&$select=Id";
-    const existing = await spRequest('GET', checkUrl, null, null);
-    const existingItem = existing.value && existing.value[0];
-
     const payload = {
-      Title: entry.refNo || String(entry.id),
-      QuoteID: String(entry.id),
-      QuoteType: entry.type || '',
-      ClientName: entry.client || '',
-      JobTitle: entry.jobTitle || '',
-      QuoteDate: entry.date || new Date().toISOString().split('T')[0],
-      Total: parseFloat(entry.total) || 0,
-      HelperCount: parseInt(entry.helperCount) || 0,
-      QuoteData: JSON.stringify(entry)
+      quoteId:     String(entry.id),
+      title:       entry.refNo || String(entry.id),
+      quoteType:   entry.type || '',
+      clientName:  entry.client || '',
+      jobTitle:    entry.jobTitle || '',
+      quoteDate:   entry.date || new Date().toISOString().split('T')[0],
+      total:       parseFloat(entry.total) || 0,
+      helperCount: parseInt(entry.helperCount) || 0,
+      quoteData:   JSON.stringify(entry)
     };
-
-    if (existingItem) {
-      // Update existing
-      await spRequest('PATCH',
-        siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items(" + existingItem.Id + ")",
-        payload, digest);
-    } else {
-      // Create new
-      await spRequest('POST', listUrl, payload, digest);
-    }
+    const r = await fetch(PA_FLOWS.saveQuote, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
   } catch(e) {
-    console.error('SP saveToLog error:', e);
-    notify('⚠️ Could not save to SharePoint: ' + e.message);
+    console.error('saveToLog error:', e);
+    notify('⚠️ Could not save to log: ' + e.message);
   }
 }
 
 async function getLog() {
-  const { siteUrl } = getSPContext();
-  if (!siteUrl) return [];
+  if (!PA_FLOWS.getQuotes) return [];
   try {
-    const url = siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items?$select=QuoteData&$orderby=Id%20desc&$top=500";
-    const data = await spRequest('GET', url, null, null);
+    const r = await fetch(PA_FLOWS.getQuotes, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const items = await r.json();
     const entries = [];
-    (data.value || []).forEach(item => {
+    (Array.isArray(items) ? items : []).forEach(item => {
       try { if (item.QuoteData) entries.push(JSON.parse(item.QuoteData)); } catch(e) {}
     });
     return entries;
   } catch(e) {
-    console.error('SP getLog error:', e);
+    console.error('getLog error:', e);
     return [];
   }
 }
 
 async function getEntryById(id) {
-  const { siteUrl } = getSPContext();
-  if (!siteUrl) return null;
   try {
-    const url = siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items?$filter=QuoteID eq '" + id + "'&$select=QuoteData";
-    const data = await spRequest('GET', url, null, null);
-    const item = data.value && data.value[0];
-    if (item && item.QuoteData) return JSON.parse(item.QuoteData);
-    return null;
+    const entries = await getLog();
+    return entries.find(e => String(e.id) === String(id)) || null;
   } catch(e) { console.error('getEntryById error:', e); return null; }
 }
 
@@ -2894,19 +2877,14 @@ function deleteLogEntry(id) {
 }
 
 async function confirmDeleteLogEntry(id) {
-  const { siteUrl } = getSPContext();
+  if (!PA_FLOWS.deleteQuote) { notify('⚠️ Delete flow URL not configured yet.'); return; }
   try {
-    if (siteUrl) {
-      const digest = await getSPDigest(siteUrl);
-      const checkUrl = siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items?$filter=QuoteID eq '" + id + "'&$select=Id";
-      const existing = await spRequest('GET', checkUrl, null, null);
-      const item = existing.value && existing.value[0];
-      if (item) {
-        await spRequest('DELETE',
-          siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items(" + item.Id + ")",
-          null, digest);
-      }
-    }
+    const r = await fetch(PA_FLOWS.deleteQuote, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quoteId: String(id) })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
   } catch(e) { notify('⚠️ Delete failed: ' + e.message); return; }
   renderLog();
   notify('Quote deleted.');
@@ -3074,18 +3052,15 @@ window.addEventListener('resize', checkSidebarToggleVisibility);
 document.addEventListener('DOMContentLoaded', checkSidebarToggleVisibility);
 
 async function clearLog() {
-  if (!confirm('Clear ALL saved quotes from SharePoint? This cannot be undone.')) return;
-  const { siteUrl } = getSPContext();
-  if (!siteUrl) { notify('⚠️ SharePoint not available.'); return; }
+  if (!confirm('Clear ALL saved quotes? This cannot be undone.')) return;
   try {
-    const digest = await getSPDigest(siteUrl);
-    const url = siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items?$select=Id&$top=500";
-    const data = await spRequest('GET', url, null, null);
-    const items = data.value || [];
-    await Promise.all(items.map(item =>
-      spRequest('DELETE',
-        siteUrl + "/_api/web/lists/GetByTitle('" + SP_LIST + "')/items(" + item.Id + ")",
-        null, digest)
+    const entries = await getLog();
+    await Promise.all(entries.map(e =>
+      fetch(PA_FLOWS.deleteQuote, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId: String(e.id) })
+      })
     ));
     notify('Log cleared.');
     renderLog();
