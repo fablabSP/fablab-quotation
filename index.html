@@ -2268,7 +2268,7 @@ function buildQuoteDoc() {
   const combinedSPTIE = (d.spCharge || 0) + (d.tieFee || 0);
   const totalRowsArr = [
     (d.helperCost > 0 && !isWorkshop) ? ['Student Helper/Agent' + (d.helperCount > 1 ? ' × ' + d.helperCount : ''), d.helperCost] : null,
-    (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work (' + (d.expPctLabel||50) + '%)', d.expeditedFee] : null,
+    (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work', d.expeditedFee] : null,
     (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
     // Show combined SP+TIE as a single "SP Charges" line on the client quote
     ((isExternal || (isWorkshop && workshopChargesOnDoc)) && combinedSPTIE > 0) ? ['SP Charges', combinedSPTIE] : null,
