@@ -1385,11 +1385,12 @@ function onMaterialChange(id) {
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>🎨 Colour Mode</label>
+        <label>🎨 Colours</label>
         <select id="li-colourmode-${id}" onchange="calcTotal()" style="width:100%;">
-          <option value="single">Single Colour (default — no surcharge)</option>
-          <option value="multi_same">Multi-Colour, Same Material (+10% filament cost)</option>
-          <option value="multi_diff">Multi-Colour, Different Materials (+15% filament cost)</option>
+          <option value="single">Single Colour — no surcharge</option>
+          <option value="2">2 Colours (+5%)</option>
+          <option value="3">3 Colours (+10%)</option>
+          <option value="4">4 Colours (+15%)</option>
         </select>
       </div>
       <div class="form-group">
@@ -1647,16 +1648,17 @@ function calcMaterialCost(id) {
     const rate3d = PRICES._3dprint_rate || 25;
     const baseFilCost = (g / 1000) * rate3d;
     const colourMode = document.getElementById(`li-colourmode-${id}`)?.value || 'single';
-    const colourPct = colourMode === 'multi_same' ? 0.10 : colourMode === 'multi_diff' ? 0.15 : 0;
+    const colourCount = colourMode === 'single' ? 1 : parseInt(colourMode) || 1;
+    const colourPct = colourMode === 'single' ? 0 : (colourCount - 1) * 0.05;
     const colourSurcharge = baseFilCost * colourPct;
     matPerItem = baseFilCost + colourSurcharge;
     const fil = document.getElementById(`li-filament-${id}`)?.value || 'PLA';
-    const colourLabel = colourMode === 'multi_same' ? ' · Multi-Colour (Same)' : colourMode === 'multi_diff' ? ' · Multi-Colour (Diff)' : '';
+    const colourLabel = colourMode !== 'single' ? ` · ${colourCount} Colours` : '';
     descDetail = `3D Print · ${fil} · ${g}g${colourLabel}`;
     const fc = document.getElementById(`li-filcost-${id}`);
     if (fc) fc.value = '$' + baseFilCost.toFixed(2);
     const cs = document.getElementById(`li-coloursurcharge-${id}`);
-    if (cs) cs.value = colourPct > 0 ? '+$' + colourSurcharge.toFixed(2) + ` (${colourPct*100}%)` : '—';
+    if (cs) cs.value = colourPct > 0 ? '+$' + colourSurcharge.toFixed(2) + ' (+' + Math.round(colourPct*100) + '%)' : '—';
   } else if (type === 'gypsum') {
     const shape = document.getElementById(`li-gypsum-shape-${id}`)?.value || 'round';
     matPerItem = parseFloat(document.getElementById(`li-gypsum-price-${id}`)?.value || 0);
