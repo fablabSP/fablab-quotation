@@ -995,10 +995,10 @@
           <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Saved quotations</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn btn-ghost btn-sm" onclick="backupLog()" title="Download all quotes as CSV backup">⬇ Backup</button>
-          <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0;" title="Restore quotes from a CSV backup file">
+          <button class="btn btn-ghost btn-sm" onclick="backupLog()" title="Download all quotes as backup (.jsonl)">⬇ Backup</button>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0;" title="Restore quotes from a backup file (.jsonl)">
             ⬆ Restore
-            <input type="file" id="restoreFileInput" accept=".csv" onchange="restoreLog(event)" style="display:none;">
+            <input type="file" id="restoreFileInput" accept=".jsonl,.json" onchange="restoreLog(event)" style="display:none;">
           </label>
           <button class="btn btn-danger btn-sm" onclick="clearLog()">🗑 Clear All</button>
         </div>
@@ -2641,15 +2641,15 @@ async function saveQuote() {
           saved: orig.saved,
           savedEdited: new Date().toISOString()
         };
-        // SP saveToLog handles upsert by QuoteID
+        await saveToLog(entry);
         editingEntryId = null;
         const banner = document.getElementById('editingBanner');
         if (banner) banner.style.display = 'none';
         updateSaveBtnLabels(false);
-        notify('Quote updated ✓');
+        notify('Quote updated ✓  —  saved to SharePoint.');
         return;
       }
-    } catch(e) {}
+    } catch(e) { console.error('Edit save error:', e); }
   }
 
   const entry = {
@@ -2666,7 +2666,7 @@ async function saveQuote() {
     snapshot,
     saved: new Date().toISOString()
   };
-  saveToLog(entry);
+  await saveToLog(entry);
   notify('Quote saved ✓  —  click Print to save as PDF.');
 }
 
@@ -3361,35 +3361,17 @@ async function backupLog() {
   const entries = await getLog();
   if (!entries.length) { notify('No quotes to back up.'); return; }
 
-  // Build CSV — each row is one quote, full JSON state in last column
-  const header = ['id','refNo','client','jobTitle','type','date','total','saved','state_json'];
-  const rows = entries.map(e => {
-    try {
-      const safeJson = JSON.stringify(e).replace(/"/g, '""'); // escape quotes for CSV
-      return [
-        e.id,
-        '"' + (e.refNo || '').replace(/"/g,'""') + '"',
-        '"' + (e.client || '').replace(/"/g,'""') + '"',
-        '"' + (e.jobTitle || '').replace(/"/g,'""') + '"',
-        e.type || '',
-        e.date || '',
-        (e.total || 0).toFixed(2),
-        e.saved || '',
-        '"' + safeJson + '"'
-      ].join(',');
-    } catch(err) { return null; }
-  }).filter(Boolean);
-
-  const csv = [header.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  // Use JSON Lines format (.jsonl) — one entry per line, fully reliable
+  const lines = entries.map(e => JSON.stringify(e));
+  const blob = new Blob([lines.join('\n')], { type: 'application/jsonl;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const d = new Date();
   a.href = url;
-  a.download = 'FabLab_QuoteLog_Backup_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.csv';
+  a.download = 'FabLab_QuoteLog_Backup_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.jsonl';
   a.click();
   URL.revokeObjectURL(url);
-  notify('Backup downloaded — ' + rows.length + ' quote(s).');
+  notify('Backup downloaded — ' + entries.length + ' quote(s).');
 }
 
 function restoreLog(event) {
@@ -3398,45 +3380,44 @@ function restoreLog(event) {
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
-      const lines = e.target.result.split(/\r?\n/).filter(Boolean);
-      if (lines.length < 2) { notify('File appears empty.'); return; }
+      const text = e.target.result.trim();
+      if (!text) { notify('File appears empty.'); return; }
 
-      // Parse CSV — last column is full JSON, may contain commas inside quotes
-      let imported = 0, skipped = 0, updated = 0;
-      for (let i = 1; i < lines.length; i++) {
+      let entries = [];
+
+      // Support both .jsonl (one JSON per line) and legacy .json array
+      if (text.startsWith('[')) {
+        // Legacy JSON array format
+        try { entries = JSON.parse(text); } catch(err) { notify('Invalid JSON file.'); return; }
+      } else {
+        // JSON Lines format — one entry per line
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        lines.forEach(line => {
+          try {
+            const entry = JSON.parse(line);
+            if (entry && entry.id) entries.push(entry);
+          } catch(lineErr) { /* skip bad lines */ }
+        });
+      }
+
+      if (!entries.length) { notify('No valid quotes found in file.'); return; }
+
+      let imported = 0, updated = 0, skipped = 0;
+      for (const entry of entries) {
         try {
-          // Find the last quoted JSON column by locating the opening of the last "{"
-          const line = lines[i];
-          // The state_json column starts after the 8th comma (columns 0-7), quoted
-          // Find the first " after the 8th comma
-          let commaCount = 0, jsonStart = -1;
-          for (let c = 0; c < line.length; c++) {
-            if (line[c] === ',' && commaCount < 8) {
-              commaCount++;
-              if (commaCount === 8) { jsonStart = c + 2; break; } // skip the opening quote
-            }
-          }
-          if (jsonStart < 0) { skipped++; continue; }
-          // The JSON runs to the last character minus the closing quote
-          const rawJson = line.slice(jsonStart, line.length - 1).replace(/""/g, '"');
-          const entry = JSON.parse(rawJson);
           if (!entry.id) { skipped++; continue; }
-
-          // Save to SharePoint
           const existing = await getEntryById(entry.id);
           if (existing) { updated++; } else { imported++; }
           await saveToLog(entry);
-        } catch(lineErr) { skipped++; }
+        } catch(err) { skipped++; }
       }
 
       renderLog();
-      updateFYSummary();
       const msg = imported + ' imported, ' + updated + ' updated' + (skipped ? ', ' + skipped + ' skipped' : '') + '.';
       notify('Restore complete — ' + msg);
     } catch(parseErr) {
-      notify('Could not read backup file. Make sure it\'s a valid CSV backup.');
+      notify('Could not read backup file. Make sure it is a valid .jsonl or .json backup.');
     }
-    // Reset file input so the same file can be re-selected
     event.target.value = '';
   };
   reader.readAsText(file);
