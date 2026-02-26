@@ -1840,13 +1840,21 @@ function calcTotal() {
   const taxNoteEl = document.getElementById('taxNote');
   if (taxNoteEl) {
     if (isExternal) {
-      taxNoteEl.textContent = 'External: SP Charge Rate (' + rateSPpct + '%) & TIE (' + rateTIEpct + '%) applied.';
+      if (spTieApplies) {
+        taxNoteEl.textContent = 'External: SP Charge Rate (' + rateSPpct + '%) & TIE (' + rateTIEpct + '%) applied.';
+        taxNoteEl.style.display = '';
+      } else {
+        taxNoteEl.textContent = 'External: GST (' + rateGSTpct + '%) applied.';
+        taxNoteEl.style.display = '';
+      }
     } else if (isWorkshopType) {
+      taxNoteEl.style.display = '';
       taxNoteEl.textContent = workshopChargesOn
         ? 'Workshop: SP Charge Rate (' + rateSPpct + '%) + GST applied.'
         : 'Workshop: GST (' + rateGSTpct + '%) applied only.';
     } else {
       taxNoteEl.textContent = 'Internal: No SP Surcharge or GST applied.';
+      taxNoteEl.style.display = '';
     }
   }
 
