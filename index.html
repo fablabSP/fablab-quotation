@@ -1,0 +1,3867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FabLab Quotation Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Aptos:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Aptos fallback stack */
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f0f1f3;
+    --border: #d8dce4;
+    --accent: #c0392b;
+    --accent-dark: #962d22;
+    --accent-light: #fdf2f1;
+    --blue: #1a56db;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --text-light: #9ca3af;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --font: 'Nunito', 'Aptos', 'Segoe UI', Arial, sans-serif;
+  }
+  /* DARK MODE — applied via [data-theme="dark"] on <html> */
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --surface: #1a1d23;
+    --surface2: #22262f;
+    --border: #2e3340;
+    --accent: #e05c4e;
+    --accent-dark: #c0392b;
+    --accent-light: #2a1a19;
+    --blue: #4d8ef0;
+    --text: #e8eaf0;
+    --text-muted: #9ca3af;
+    --text-light: #6b7280;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  [data-theme="dark"] body { background: var(--bg); color: var(--text); }
+
+  /* Inputs, selects, textareas */
+  [data-theme="dark"] input,
+  [data-theme="dark"] select,
+  [data-theme="dark"] textarea {
+    background: var(--surface2) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+  [data-theme="dark"] input[readonly],
+  [data-theme="dark"] input[type="text"][readonly] {
+    background: #181b22 !important;
+    color: var(--text-muted) !important;
+  }
+  [data-theme="dark"] select option { background: #22262f; color: var(--text); }
+
+  /* Layout panels */
+  [data-theme="dark"] .main { background: var(--bg) !important; }
+  [data-theme="dark"] .main.type-internal { background: #111927 !important; }
+  [data-theme="dark"] .main.type-external { background: #1a1508 !important; }
+  [data-theme="dark"] .main.type-workshop { background: #0d1a11 !important; }
+  [data-theme="dark"] .section { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .sidebar { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .tabs { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .header { background: var(--surface) !important; border-color: var(--border) !important; }
+
+  /* Line items & accessories */
+  [data-theme="dark"] .line-item { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .line-item:hover { border-color: #4a5060 !important; }
+
+  /* Toggles & conditionals */
+  [data-theme="dark"] .toggle-row { border-color: var(--border) !important; }
+  [data-theme="dark"] .conditional-inner { background: var(--surface2) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .toggle-slider { background: #374151 !important; }
+
+  /* Buttons */
+  [data-theme="dark"] .btn-ghost { color: var(--text-muted) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .btn-ghost:hover { color: var(--text) !important; }
+  [data-theme="dark"] .btn-secondary { background: var(--surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .btn-danger:hover { background: #2a1010 !important; }
+  /* Log action buttons with inline green/blue styles */
+  [data-theme="dark"] .btn[style*="background:#f0fdf4"] { background: #0d2010 !important; border-color: #166534 !important; color: #86efac !important; }
+  [data-theme="dark"] .btn[style*="background:#eff6ff"] { background: #0d1a30 !important; border-color: #1e40af !important; color: #93c5fd !important; }
+
+  /* Modal */
+  [data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.75) !important; }
+  [data-theme="dark"] .modal-box { background: var(--surface) !important; border: 1px solid var(--border) !important; }
+  /* Preview modal content always light — quotes are print documents */
+  /* Preview modal — always render as a light print document regardless of app theme */
+  #previewModal .modal-box { background: #ffffff !important; }
+  #previewModal #quoteDocContent { background: #ffffff !important; color: #1a1d23 !important; }
+  #previewModal #quoteDocContent * { color: inherit !important; background: transparent !important; border-color: revert !important; }
+  /* Lock these three elements to black bg + white text always — never affected by theme */
+  #previewModal .qdoc-table th        { background: #1a1d23 !important; color: #ffffff !important; }
+  #previewModal .qdoc-total-row.grand { background: #1a1d23 !important; color: #ffffff !important; }
+  #previewModal .qdoc-vires-title     { background: #1a1d23 !important; color: #ffffff !important; }
+  /* Zebra stripe rows */
+  #previewModal .qdoc-table tr:nth-child(even) td { background: #fafafa !important; }
+  /* Dark mode wrapper still white */
+  [data-theme="dark"] #previewModal .modal-box { background: #ffffff !important; border-color: #ccc !important; }
+  /* Toolbar stays dark regardless */
+  #previewModal .modal-toolbar { background: #1a1d23 !important; }
+  [data-theme="dark"] .modal-header { background: var(--surface2) !important; border-color: var(--border) !important; }
+
+  /* Quote log */
+  [data-theme="dark"] .log-entry { background: var(--surface) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .log-entry:hover { border-color: var(--accent) !important; }
+  [data-theme="dark"] .log-item-meta { color: var(--text-muted) !important; }
+  [data-theme="dark"] .log-filters { border-color: var(--border) !important; }
+
+  /* FY Summary sidebar */
+  [data-theme="dark"] .fy-sidebar { background: var(--surface2) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .fy-sidebar * { border-color: var(--border) !important; }
+
+  /* Summary sidebar rows */
+  [data-theme="dark"] .summary-row { border-color: var(--border) !important; }
+  [data-theme="dark"] .summary-section { color: var(--text-muted) !important; }
+
+  /* Badges */
+  [data-theme="dark"] .badge-internal { background: #1e3a5f !important; color: #93c5fd !important; }
+  [data-theme="dark"] .badge-external { background: #3a2a00 !important; color: #fcd34d !important; }
+  [data-theme="dark"] .badge-workshop { background: #0f2a15 !important; color: #86efac !important; }
+
+  /* Workshop items & date mode buttons */
+  [data-theme="dark"] .wi-row { background: #0d2010 !important; border-color: #166534 !important; }
+  [data-theme="dark"] .wi-btn.used { background: #22262f !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .date-mode-btn { background: var(--surface2) !important; border-color: var(--border) !important; color: var(--text-muted) !important; }
+  [data-theme="dark"] .date-mode-btn.active { background: #1e3a5f !important; border-color: #4d8ef0 !important; color: #93c5fd !important; }
+
+  /* Editing banner */
+  [data-theme="dark"] #editingBanner { background: #2a2010 !important; border-color: #92400e !important; }
+
+  /* Notification */
+  [data-theme="dark"] #notif { background: #0d2010 !important; color: #86efac !important; border-color: #166534 !important; }
+
+  /* Inline coloured boxes (course fee, TIE note, workshop dates, etc.) */
+  /* Green boxes — course fee, workshop sections */
+  [data-theme="dark"] [style*="background:#f0fdf4"] { background: #0d2010 !important; border-color: #166534 !important; }
+  [data-theme="dark"] [style*="background: #f0fdf4"] { background: #0d2010 !important; border-color: #166534 !important; }
+  /* Yellow boxes — TIE note, expedited, editing warning */
+  [data-theme="dark"] [style*="background:#fef9c3"] { background: #1f1800 !important; border-color: #854d0e !important; }
+  [data-theme="dark"] [style*="background: #fef9c3"] { background: #1f1800 !important; border-color: #854d0e !important; }
+  [data-theme="dark"] [style*="background:#fef3c7"] { background: #1f1800 !important; border-color: #92400e !important; }
+  [data-theme="dark"] [style*="background:#fffbeb"] { background: #1f1800 !important; border-color: #92400e !important; }
+  /* Blue boxes — internal type tint */
+  [data-theme="dark"] [style*="background:#eff6ff"] { background: #0d1a30 !important; border-color: #1e40af !important; }
+  [data-theme="dark"] [style*="background:#dbeafe"] { background: #0d1a30 !important; border-color: #1e40af !important; }
+
+  /* Materials & Rates — row cards */
+  [data-theme="dark"] [style*="background:#f9fafb"] { background: var(--surface2) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] [style*="background: #f9fafb"] { background: var(--surface2) !important; border-color: var(--border) !important; }
+  /* Table header cells in rates panel */
+  [data-theme="dark"] [style*="background:#f3f4f6"] { background: #2a2f3a !important; border-color: var(--border) !important; color: var(--text-muted) !important; }
+  [data-theme="dark"] [style*="background: #f3f4f6"] { background: #2a2f3a !important; border-color: var(--border) !important; color: var(--text-muted) !important; }
+
+  /* Download FY CSV button */
+  [data-theme="dark"] [style*="background:#f0fdf4"][style*="border:1px solid #86efac"] { background: #0d2010 !important; border-color: #166534 !important; color: #86efac !important; }
+
+  /* Tab active/hover */
+  [data-theme="dark"] .tab { color: var(--text-muted) !important; }
+  [data-theme="dark"] .tab:hover { color: var(--text) !important; }
+  [data-theme="dark"] .tab.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+
+  /* Section title icon */
+  [data-theme="dark"] .section-title-icon { background: var(--accent-light) !important; }
+
+  /* Add item buttons */
+  [data-theme="dark"] .add-item-btn { background: var(--surface2) !important; border-color: var(--border) !important; color: var(--text-muted) !important; }
+  [data-theme="dark"] .add-item-btn:hover { border-color: var(--accent) !important; color: var(--accent) !important; }
+  [data-theme="dark"] .wi-btn:not(.used) { border-color: #166534 !important; color: #86efac !important; background: #0d2010 !important; }
+
+  /* Readonly inputs in line items (filament cost, colour surcharge, etc.) */
+  [data-theme="dark"] .line-item input[readonly] { background: #181b22 !important; }
+
+  /* Print: always light */
+  @media print { [data-theme="dark"] body { background: #fff !important; color: #000 !important; } }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+  .header-brand { display: flex; align-items: center; gap: 16px; }
+  .header-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .header-title span { color: var(--accent); }
+  .header-divider { width: 1px; height: 28px; background: var(--border); }
+  .header-subtitle { font-size: 12px; color: var(--text-muted); }
+  .header-actions { display: flex; gap: 8px; }
+
+  /* TABS */
+  .tabs { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 0; }
+  .tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-family: var(--font);
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* LAYOUT */
+  .app { display: grid; grid-template-columns: 1fr 320px; gap: 0; min-height: calc(100vh - 96px); }
+  .main { padding: 22px 28px; overflow-y: auto; transition: background 0.25s; }
+  .main.type-internal { background: #eff6ff; }
+  .main.type-internal .section { border-top: 3px solid #3b82f6; }
+  .main.type-internal .section-title { color: #1d4ed8; }
+  .main.type-external { background: #fffbeb; }
+  .main.type-external .section { border-top: 3px solid #f59e0b; }
+  .main.type-external .section-title { color: #b45309; }
+  .main.type-workshop { background: #f0fdf4; }
+  .main.type-workshop .section { border-top: 3px solid #22c55e; }
+  .main.type-workshop .section-title { color: #15803d; }
+  .sidebar { background: var(--surface); border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; position: sticky; top: 96px; height: calc(100vh - 96px); box-shadow: -2px 0 8px rgba(0,0,0,0.04); }
+
+  /* BUTTONS */
+  .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue:hover { background: #1447c0; }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-danger { background: transparent; color: #dc2626; border: 1px solid #fca5a5; font-size: 11px; padding: 4px 8px; }
+  .btn-danger:hover { background: #fef2f2; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* SECTIONS */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title-icon { width: 18px; height: 18px; background: var(--accent-light); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+
+  /* FORM */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-row-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.3px; text-transform: uppercase; }
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,57,43,0.08); }
+  input[readonly] { background: #fafafa; color: var(--text-muted); cursor: default; }
+  select option { background: #fff; }
+  .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+    background: var(--surface2);
+  }
+  .radio-label:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .radio-label input { display: none; }
+
+  /* TOGGLES */
+  .toggle-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .toggle-row:first-child { padding-top: 0; }
+  .toggle-info { flex: 1; }
+  .toggle-label { font-size: 13px; font-weight: 700; color: var(--text); }
+  .toggle-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; margin-top: 2px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 22px; cursor: pointer; transition: 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+  .conditional { display: none; }
+  .conditional.show { display: block; }
+  .conditional-inner { background: var(--accent-light); border: 1px solid #f5c6c2; border-radius: 6px; padding: 12px; margin: 8px 0; }
+
+  /* LINE ITEMS */
+  .line-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    position: relative;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .line-item:hover { border-color: #b0b7c3; box-shadow: var(--shadow); }
+  .line-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .line-item-num { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); background: var(--border); padding: 2px 8px; border-radius: 10px; }
+  .line-item-cost { font-size: 14px; font-weight: 800; color: var(--accent); }
+  .add-item-btn {
+    width: 100%;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .add-item-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* ACCESSORIES */
+  .acc-row { display: grid; grid-template-columns: 1fr 70px 90px 110px auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+  /* SIDEBAR */
+  .sidebar-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+  .sidebar-section { margin-bottom: 16px; }
+  .summary-line { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .summary-line:last-child { border-bottom: none; }
+  .summary-line .lbl { color: var(--text-muted); }
+  .summary-line .val { font-weight: 700; color: var(--text); }
+  .summary-total { background: var(--accent); color: #fff; border-radius: 8px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .summary-total .lbl { font-size: 12px; font-weight: 700; }
+  .summary-total .val { font-size: 18px; font-weight: 800; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .badge-internal { background: #dbeafe; color: #1d4ed8; }
+  .badge-external { background: #fef3c7; color: #b45309; }
+  .badge-workshop { background: #dcfce7; color: #15803d; }
+  .workshop-green { --accent: #15803d; --accent-dark: #166534; --accent-light: #f0fdf4; }
+  #workshopSection .section-title { color: #15803d; }
+  #workshopSection .add-item-btn { border-color: #86efac; color: #15803d; }
+  #workshopSection .add-item-btn:hover { background: #dcfce7; border-color: #4ade80; }
+  .wi-row { display:grid; grid-template-columns: 160px 1fr auto; gap:8px; align-items:center; margin-bottom:8px; padding:8px 10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; }
+  .wi-btn.used { opacity:0.4; pointer-events:none; cursor:not-allowed; background:#e5e7eb; border-color:#d1d5db; color:#9ca3af; }
+  .sidebar.workshop-mode { --accent: #15803d; --accent-dark: #166534; --accent-light: #f0fdf4; }
+  .sidebar.workshop-mode .sidebar-title { color: #15803d; }
+  .sidebar.workshop-mode .summary-total { background: #dcfce7; border-color: #86efac; }
+  .sidebar.workshop-mode .summary-total .val { color: #15803d; }
+  .sidebar.workshop-mode .summary-line .val { color: #15803d; }
+  .sidebar.workshop-mode .btn-primary { background: #15803d; border-color: #15803d; }
+  .sidebar.workshop-mode .btn-primary:hover { background: #166534; }
+  .sidebar.workshop-mode .btn-secondary { border-color: #15803d; color: #15803d; }
+  .wi-label { font-size:12px; font-weight:700; color:#15803d; }
+  .date-mode-btn { padding:6px 14px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.15s; }
+  .date-mode-btn.active { background:#15803d; color:#fff; border-color:#15803d; }
+  .specific-date-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+  .tax-note { font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+  .fine-print { font-size: 10px; color: var(--text-light); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.5; }
+
+  /* QUOTE LOG */
+  .log-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; }
+  .log-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+  .log-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+  .log-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .log-item-title { font-weight: 700; font-size: 13px; }
+  .log-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .log-item-total { font-weight: 800; color: var(--accent); font-size: 14px; }
+  .log-filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); font-size: 11px; font-weight: 700; cursor: pointer; font-family: var(--font); color: var(--text-muted); transition: all 0.15s; }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; overflow-y: auto; padding: 30px 16px; }
+  .modal-overlay.show { display: flex; justify-content: center; align-items: flex-start; }
+  .modal-box { background: #fff; width: 100%; max-width: 780px; border-radius: 10px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  .modal-toolbar { background: #1a1d23; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .modal-toolbar-title { color: #fff; font-size: 13px; font-weight: 700; }
+
+  /* QUOTE DOCUMENT */
+  .quote-doc { padding: 40px 48px; font-family: var(--font); color: #1a1d23; }
+  .qdoc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #1a1d23; }
+  .qdoc-address { font-size: 11px; color: #555; margin-top: 6px; line-height: 1.7; }
+  .qdoc-title-block { text-align: right; }
+  .qdoc-doc-title { font-size: 20px; font-weight: 800; color: #1a1d23; text-transform: uppercase; letter-spacing: 0.5px; }
+  .qdoc-ref { font-size: 11px; color: #666; margin-top: 6px; line-height: 1.8; }
+  .qdoc-ref strong { color: #1a1d23; font-weight: 700; }
+  .qdoc-type-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px; }
+  .qdoc-type-badge.internal { background: #dbeafe; color: #1d4ed8; }
+  .qdoc-type-badge.external { background: #fef3c7; color: #b45309; }
+
+  .qdoc-client { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; padding: 14px 16px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e5e7eb; }
+  .qdoc-client-section h4 { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: #9ca3af; margin-bottom: 4px; }
+  .qdoc-client-section p { font-size: 14px; font-weight: 700; }
+  .qdoc-client-section .sub { font-size: 12px; font-weight: 400; color: #555; }
+
+  .qdoc-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px; }
+  .qdoc-table th { background: #1a1d23; color: #fff; padding: 9px 10px; text-align: left; font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; font-weight: 700; }
+  .qdoc-table th.r { text-align: right; }
+  .qdoc-table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  .qdoc-table td.r { text-align: right; font-weight: 600; }
+  .qdoc-table tr:nth-child(even) td { background: #fafafa; }
+  .qdoc-desc-detail { font-size: 10px; color: #888; margin-top: 2px; }
+
+  .qdoc-totals-wrap { display: flex; justify-content: flex-end; }
+  .qdoc-totals { width: 280px; font-size: 12px; }
+  .qdoc-total-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+  .qdoc-total-row.grand { background: #1a1d23; color: #fff; padding: 10px 12px; border-radius: 6px; margin-top: 8px; font-weight: 800; font-size: 14px; border: none; }
+  .qdoc-total-row .amt { font-weight: 700; }
+
+  /* INTERNAL VIRES TABLE */
+  .qdoc-vires { margin-top: 24px; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; }
+  .qdoc-vires-title { background: #1a1d23; color: #fff; padding: 8px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .qdoc-vires-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .qdoc-vires-table td { padding: 7px 14px; border-bottom: 1px solid #f0f0f0; }
+  .qdoc-vires-table td:first-child { font-weight: 700; color: #555; width: 160px; background: #f8f9fa; }
+  .qdoc-vires-table tr:last-child td { border-bottom: none; }
+
+  /* HELPERS FINE PRINT */
+  .qdoc-fineprint { margin-top: 16px; padding: 10px 14px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; font-size: 10px; color: #78350f; }
+  .qdoc-footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #9ca3af; text-align: center; line-height: 1.6; }
+
+  /* NOTIFICATION */
+  .notif { position: fixed; bottom: 20px; right: 20px; background: #1a1d23; color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 9999; transform: translateY(80px); transition: transform 0.25s; box-shadow: var(--shadow-md); }
+  .notif.show { transform: translateY(0); }
+
+  /* ── RESPONSIVE BREAKPOINTS ─────────────────────────────── */
+
+  /* Large screens (1280px+) — wider sidebar */
+  @media (min-width: 1280px) {
+    .app { grid-template-columns: 1fr 360px; }
+  }
+
+  /* Medium (1100px) — tighten up */
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr 270px; }
+    .main { padding: 18px 20px; }
+    .header { padding: 0 20px; }
+    .tabs { padding: 0 20px; }
+    .header-subtitle { display: none; }
+    .header-divider { display: none; }
+    .form-row-4 { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Log panel responsive */
+  @media (max-width: 900px) {
+    #panel-log > div { grid-template-columns: 1fr !important; }
+    #fySidebar { position:static; height:auto; border-left:none; border-top:2px solid var(--border); }
+  }
+
+  /* Tablet (≤900px) — sidebar moves to bottom strip */
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: static;
+      height: auto;
+      border-left: none;
+      border-top: 2px solid var(--border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .sidebar-section { margin-bottom: 0; }
+    .sidebar-section:first-child { grid-column: 1 / -1; }
+    .sidebar .fine-print { grid-column: 1 / -1; }
+    .sidebar .btn { margin-top: 4px !important; }
+    .form-row-3 { grid-template-columns: 1fr 1fr; }
+    .form-row-4 { grid-template-columns: 1fr 1fr; }
+    .wi-row { grid-template-columns: 130px 1fr auto; }
+    .modal-box { border-radius: 0; max-width: 100%; }
+    .modal-overlay { align-items: flex-start; padding: 0; }
+  }
+
+  /* Mobile (≤600px) — full single column */
+  @media (max-width: 600px) {
+    .header { padding: 0 14px; height: 52px; }
+    .header-title { font-size: 13px; }
+    .header-actions { gap: 5px; }
+    .tabs { padding: 0 12px; }
+    .tab { padding: 9px 12px; font-size: 12px; }
+    .main { padding: 12px; }
+    .section { padding: 12px; margin-bottom: 10px; }
+    .section-title { font-size: 13px; }
+    .form-row { grid-template-columns: 1fr; }
+    .form-row-3 { grid-template-columns: 1fr; }
+    .form-row-4 { grid-template-columns: 1fr 1fr; }
+    .sidebar {
+      display: block;
+      position: static;
+      height: auto;
+      border-left: none;
+      border-top: 2px solid var(--border);
+      padding: 14px;
+    }
+    .sidebar .btn { width: 100%; justify-content: center; margin-top: 8px !important; }
+    .line-item { padding: 12px; }
+    .line-item-header { flex-wrap: wrap; gap: 6px; }
+    .acc-row { grid-template-columns: 1fr 60px 80px 84px auto; }
+    .wi-row { grid-template-columns: 1fr auto; }
+    .wi-label { font-size: 11px; }
+    .radio-group { flex-direction: column; gap: 4px; }
+    .log-filters { flex-wrap: wrap; }
+    .filter-btn { font-size: 11px; padding: 5px 10px; }
+    .modal-toolbar { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+    .modal-toolbar-title { font-size: 13px; }
+    .date-mode-btn { font-size: 11px; padding: 5px 10px; }
+    .specific-date-row { flex-wrap: wrap; }
+    .summary-line { font-size: 11px; }
+    .summary-total { font-size: 14px; }
+    .tax-note { font-size: 10px; }
+    #workshopBtnGroup { flex-direction: column; }
+    #workshopBtnGroup .add-item-btn { min-width: unset; }
+  }
+
+  /* Extra small (≤400px) */
+  @media (max-width: 400px) {
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .main { padding: 8px; }
+    .section { padding: 10px; }
+    .form-row-4 { grid-template-columns: 1fr; }
+    .header-title { font-size: 12px; }
+  }
+
+  /* Collapsible sidebar on mobile */
+  .sidebar-collapsed > *:not(.sidebar-section:first-child) { display: none !important; }
+  .sidebar-collapsed { padding-bottom: 8px; }
+
+  @media print {
+    body { background: #fff; }
+    .header, .tabs, .sidebar, .header-actions { display: none !important; }
+    .app { display: block; }
+    .main { padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-brand">
+    <div class="header-title"><span>FabLab</span> Quotation Generator</div>
+    <div class="header-divider"></div>
+    <div class="header-subtitle">SP · Department of Academic Quality & Resources</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost btn-sm" id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark / light mode" style="font-size:16px;padding:4px 10px;">🌙</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetForm()">↺ Reset</button>
+    <button class="btn btn-secondary btn-sm" onclick="showPreview()">⎙ Preview</button>
+    <button id="headerSaveBtn" class="btn btn-primary btn-sm" onclick="saveQuote()">💾 Save</button>
+    <button class="btn btn-secondary btn-sm" onclick="printCurrent()">🖨 Print</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('builder', this)">📋 Quote Builder</button>
+  <button class="tab" onclick="switchTab('log', this)">📁 Quote Log</button>
+  <button class="tab" onclick="switchTab('rates', this)">⚙️ Materials & Rates</button>
+</div>
+
+<!-- QUOTE BUILDER PANEL -->
+<div class="panel active" id="panel-builder">
+  <div class="app">
+    <div class="main">
+
+      <!-- EDITING BANNER -->
+      <div id="editingBanner" style="display:none;align-items:center;justify-content:space-between;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 16px;margin:16px 22px 0;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">✏️</span>
+          <span style="font-size:12px;font-weight:700;color:#92400e;">Editing saved quote — make changes and click <em>Update</em> to overwrite the original.</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="white-space:nowrap;color:#92400e;border-color:#f59e0b;" onclick="cancelEdit()">✕ Cancel Edit</button>
+      </div>
+
+      <!-- PROJECT INFO -->
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">📄</span> Project Information</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Company / Department Name</label>
+            <input type="text" id="companyName" placeholder="e.g. Singapore Polytechnic" oninput="calcTotal()">
+          </div>
+          <div class="form-group">
+            <label>Client Name</label>
+            <input type="text" id="clientName" placeholder="e.g. John Tan" oninput="calcTotal()">
+          </div>
+          <div class="form-group">
+            <label>Project Title</label>
+            <input type="text" id="jobTitle" placeholder="e.g. FYP Exhibition Display, STEM Workshop" oninput="calcTotal()">
+          </div>
+        </div>
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label>Project Ref No.</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span id="refPrefix" style="font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;padding:8px 0;">SP-TTC/</span>
+              <input type="text" id="refNo" placeholder="e.g. 2026-001" oninput="calcTotal()">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="quoteDate" onchange="calcTotal()">
+          </div>
+          <div class="form-group">
+            <label>Quote Type</label>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="quoteType" value="internal" onchange="updateQuoteType()" checked> Internal</label>
+              <label class="radio-label"><input type="radio" name="quoteType" value="external" onchange="updateQuoteType()"> External</label>
+              <label class="radio-label"><input type="radio" name="quoteType" value="workshop" onchange="updateQuoteType()"> External Workshop / Course</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LINE ITEMS -->
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">🔩</span> Line Items</div>
+        <div id="lineItems"></div>
+        <button class="add-item-btn" onclick="addLineItem()">+ Add Line Item</button>
+      </div>
+
+      <!-- ACCESSORIES -->
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">🔧</span> Accessories & Consumables</div>
+        <div style="display:grid;grid-template-columns:1fr 70px 90px 110px auto;gap:8px;margin-bottom:4px;padding:0 2px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);">Description</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);">Qty</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);">Unit</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);">Cost / Unit ($)</div>
+          <div></div>
+        </div>
+        <div id="accessories"></div>
+        <button class="add-item-btn" onclick="addAccessory()" style="margin-top:6px;">+ Add Accessory</button>
+      </div>
+
+      <!-- WORKSHOP COURSE ITEMS — workshop only -->
+      <div class="section" id="workshopSection" style="display:none;">
+        <div class="section-title"><span class="section-title-icon">🎓</span> Course / Workshop Details</div>
+
+        <!-- DATE BLOCK -->
+        <div style="margin-bottom:16px;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
+          <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">📅 Workshop Dates</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button class="date-mode-btn active" id="dateModeContBtn" onclick="setDateMode('continuous')">Continuous (Date Range)</button>
+            <button class="date-mode-btn" id="dateModeSpecBtn" onclick="setDateMode('specific')">Specific Dates</button>
+          </div>
+
+          <!-- Continuous date range -->
+          <div id="dateContinuousBlock">
+            <div class="form-row">
+              <div class="form-group">
+                <label>From</label>
+                <input type="date" id="dateFrom" onchange="calcTotal()">
+              </div>
+              <div class="form-group">
+                <label>To</label>
+                <input type="date" id="dateTo" onchange="calcTotal()">
+              </div>
+              <div class="form-group">
+                <label>Duration</label>
+                <input type="text" id="dateDurationDisplay" readonly placeholder="Auto-calculated">
+              </div>
+            </div>
+          </div>
+
+          <!-- Specific dates -->
+          <div id="dateSpecificBlock" style="display:none;">
+            <div id="specificDatesList"></div>
+            <button class="add-item-btn" onclick="addSpecificDate()" style="border-color:#86efac;color:#15803d;margin-top:4px;">+ Add Date</button>
+            <div style="margin-top:8px;font-size:12px;color:#15803d;font-weight:600;" id="specificDaysCount"></div>
+          </div>
+        </div>
+
+        <!-- COURSE ITEMS -->
+        <div id="workshopItems" style="margin-bottom:8px;"></div>
+
+        <!-- Course add buttons -->
+        <div style="margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;" id="workshopBtnGroup">
+          <button class="add-item-btn wi-btn" id="wi-btn-3dcad" onclick="addWorkshopItem('3dcad')" style="flex:1;min-width:140px;">+ 3D CAD</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-3dprint" onclick="addWorkshopItem('3dprint')" style="flex:1;min-width:140px;">+ 3D Printing</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-lasercut" onclick="addWorkshopItem('lasercut')" style="flex:1;min-width:140px;">+ Laser Cut</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-programming" onclick="addWorkshopItem('programming')" style="flex:1;min-width:140px;">+ Programming</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-cardboard" onclick="addWorkshopItem('cardboard')" style="flex:1;min-width:140px;">+ Cardboard Sculpt</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-equipment" onclick="addWorkshopItem('equipment')" style="flex:1;min-width:140px;">+ FabLab Equipment Usage</button>
+          <button class="add-item-btn wi-btn" id="wi-btn-custom" onclick="addWorkshopItem('custom')" style="flex:1;min-width:140px;">+ Custom Item</button>
+        </div>
+
+        <!-- Overall Course Price -->
+        <div style="margin-top:16px;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
+          <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">💰 Overall Course Price</div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label>Total Course Fee ($)</label>
+              <input type="number" id="overallCoursePrice" value="" min="0" step="0.01" placeholder="Enter total course fee" oninput="calcTotal()">
+            </div>
+            <div class="form-group" style="flex:2;">
+              <label>Notes (optional)</label>
+              <input type="text" id="overallCoursePriceNote" placeholder="e.g. Inclusive of all materials and instruction" oninput="calcTotal()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXTRAS -->
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">⚙️</span> Fees & Extras</div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Design Fee</div>
+            <div class="toggle-desc">Applied on material + machine subtotal</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="toggleDesign" onchange="toggleSection('designFields')"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="conditional" id="designFields">
+          <div class="conditional-inner">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Fee Mode</label>
+                <select id="designMode" onchange="updateDesignValueLabel(); calcTotal()">
+                  <option value="percent">Percentage (default 20%)</option>
+                  <option value="fixed">Fixed Amount ($)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label id="designValueLabel">Value (%)</label>
+                <input type="number" id="designValue" value="20" min="0" step="0.01" oninput="calcTotal()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Expedited Work</div>
+            <div class="toggle-desc">Urgency surcharge on material + machine cost</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="toggleExpedited" onchange="toggleSection('expeditedFields')"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="conditional" id="expeditedFields">
+          <div class="conditional-inner">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Urgency Level</label>
+                <select id="expeditedPct" onchange="calcTotal()">
+                  <option value="50" selected>50% — Expedited (within 2 months)</option>
+                  <option value="75">75% — Urgent (within 1 month)</option>
+                  <option value="100">100% — Emergency (within 2 weeks)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Expedited Fee</label>
+                <input type="text" id="expeditedDisplay" readonly>
+              </div>
+            </div>
+            <div style="margin-top:6px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-muted);">
+                <input type="checkbox" id="expeditedOnProjExp" onchange="calcTotal()" style="width:15px;height:15px;cursor:pointer;">
+                Also apply surcharge on Project Expenses
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Student Helpers / Agents</div>
+            <div class="toggle-desc">$11/hr × number of helpers × hours per helper</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="toggleHelpers" onchange="toggleSection('helperFields')"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="conditional" id="helperFields">
+          <div class="conditional-inner">
+            <div class="form-row form-row-3">
+              <div class="form-group">
+                <label>No. of Helpers</label>
+                <input type="number" id="helperCount" value="1" min="1" oninput="calcTotal()">
+              </div>
+              <div class="form-group">
+                <label>Hours / Helper</label>
+                <input type="number" id="helperHours" value="0" min="0" step="0.5" oninput="calcTotal()">
+              </div>
+              <div class="form-group">
+                <label>Helper Cost</label>
+                <input type="text" id="helperCostDisplay" readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- STAFF CHARGES — external/workshop only -->
+        <div id="staffChargesWrap" style="display:none;">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Staff Charges</div>
+              <div class="toggle-desc">Rate × hours × count per staff line</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="toggleStaff" onchange="toggleSection('staffFields'); if(this.checked && document.getElementById('staffItems').children.length===0) addStaffItem();"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="conditional" id="staffFields">
+            <div class="conditional-inner">
+              <div id="staffItems"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                <button class="btn btn-ghost btn-sm" onclick="addStaffItem()" style="font-size:12px;">＋ Add Staff Line</button>
+                <div style="font-size:12px;color:var(--text-muted);">Total: <strong id="staffCostDisplay" style="color:var(--text);">$0.00</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROJECT EXPENSES — external/workshop only -->
+        <div id="projExpWrap" style="display:none;">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Project Expenses</div>
+              <div class="toggle-desc">Miscellaneous project costs</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="toggleProjExp" onchange="toggleSection('projExpFields'); if(this.checked && document.getElementById('projExpItems').children.length===0) addProjExpItem();"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="conditional" id="projExpFields">
+            <div class="conditional-inner">
+              <div id="projExpItems"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                <button class="btn btn-ghost btn-sm" onclick="addProjExpItem()" style="font-size:12px;">＋ Add Expense Line</button>
+                <div style="font-size:12px;color:var(--text-muted);">Total: <strong id="projExpTotal" style="color:var(--text);">$0.00</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RATE CONFIGURATION — visibility controlled by quote type -->
+        <div id="chargeRatesWrap" style="display:none;border-top:2px solid var(--border);margin-top:4px;padding-top:12px;">
+
+          <!-- Header row: title + lock button (external) or enable toggle (workshop) -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);">Charge Rates</div>
+            <!-- External: lock/unlock edit button -->
+            <button id="rateEditBtn" onclick="toggleRateEdit()" style="display:none;font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;font-weight:700;">🔒 Edit</button>
+            <!-- Workshop: enable/disable toggle -->
+            <div id="workshopChargeToggle" style="display:none;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);">
+              <span>Apply charges</span>
+              <label class="toggle"><input type="checkbox" id="workshopChargesEnabled" checked onchange="calcTotal()"><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+
+          <div class="form-row form-row-3">
+            <div class="form-group">
+              <label>SP Charges</label>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="number" id="rateSP" value="18.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()" readonly>
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>TIE Charges</label>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="number" id="rateTIE" value="11.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()" readonly>
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>GST</label>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="number" id="rateGST" value="9" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()" readonly>
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
+              </div>
+            </div>
+          </div>
+          <!-- Force SP/TIE when no staff charges -->
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-muted);">
+              <input type="checkbox" id="forceSpTie" onchange="calcTotal()" style="width:14px;height:14px;cursor:pointer;">
+              Apply SP &amp; TIE charges even without Staff Charges
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="mainSidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">
+          <span style="display:flex;align-items:center;gap:8px;">
+            Summary
+            <span id="quoteBadge" class="badge badge-internal">Internal</span>
+          </span>
+          <!-- Collapse toggle — visible on mobile/tablet only -->
+          <button id="sidebarToggleBtn" onclick="toggleSidebar()" style="display:none;background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted);padding:2px 4px;" title="Collapse summary">▲</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div id="summaryLines"></div>
+        <div class="summary-total">
+          <span class="lbl">TOTAL</span>
+          <span class="val" id="summaryTotal">$0.00</span>
+        </div>
+        <div class="tax-note" id="taxNote">Internal: No SP Surcharge or GST.</div>
+      </div>
+
+      <div class="fine-print" id="finePrintSidebar" style="display:none;">
+        * Workmanship calculation is based on total time to produce × student rate ($11.00) [Student Agent involved]
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:12px;justify-content:center;" onclick="showPreview()">Preview Quote →</button>
+      <button id="sidebarSaveBtn" class="btn btn-secondary" style="width:100%;margin-top:8px;justify-content:center;" onclick="saveQuote()">💾 Save</button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center;border:1px solid var(--border);" onclick="printCurrent()">🖨 Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUOTE LOG PANEL -->
+<div class="panel" id="panel-log">
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:0;min-height:calc(100vh - 96px);">
+
+    <!-- LEFT: Quote list -->
+    <div style="padding:22px 28px;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;">Quote Log</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Saved quotations</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-ghost btn-sm" onclick="backupLog()" title="Download all quotes as CSV backup">⬇ Backup</button>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0;" title="Restore quotes from a CSV backup file">
+            ⬆ Restore
+            <input type="file" id="restoreFileInput" accept=".csv" onchange="restoreLog(event)" style="display:none;">
+          </label>
+          <button class="btn btn-danger btn-sm" onclick="clearLog()">🗑 Clear All</button>
+        </div>
+      </div>
+      <div class="log-filters">
+        <button class="filter-btn active" onclick="filterLog('all', this)">All</button>
+        <button class="filter-btn" onclick="filterLog('internal', this)">Internal</button>
+        <button class="filter-btn" onclick="filterLog('external', this)">External</button>
+        <button class="filter-btn" onclick="filterLog('workshop', this)">Workshop / Course</button>
+      </div>
+      <div id="logList"></div>
+    </div>
+
+    <!-- RIGHT: FY Summary sidebar -->
+    <div id="fySidebar" style="background:var(--surface);border-left:1px solid var(--border);padding:20px;overflow-y:auto;position:sticky;top:96px;height:calc(100vh - 96px);">
+      <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
+        Financial Year Summary
+        <span id="fyLabel" style="font-size:11px;background:var(--accent-light);color:var(--accent);border-radius:4px;padding:2px 7px;font-weight:700;">FY26</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">Apr – Mar · all saved quotes</div>
+
+      <div id="fySummaryLines" style="margin-bottom:12px;"></div>
+
+      <div style="background:var(--accent);color:#fff;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;opacity:0.85;margin-bottom:4px;">FY TOTAL</div>
+        <div id="fyGrandTotal" style="font-size:22px;font-weight:800;">$0.00</div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">By Category</div>
+      <div id="fyCategoryLines"></div>
+
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Change Financial Year</div>
+        <select id="fySelect" onchange="renderLog()" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:12px;">
+          <option value="26">FY26 (Apr 2025 – Mar 2026)</option>
+          <option value="27">FY27 (Apr 2026 – Mar 2027)</option>
+          <option value="28">FY28 (Apr 2027 – Mar 2028)</option>
+          <option value="29">FY29 (Apr 2028 – Mar 2029)</option>
+        </select>
+        <button onclick="downloadFYSummary()" style="margin-top:10px;width:100%;padding:8px 0;background:#f0fdf4;border:1px solid #86efac;color:#15803d;font-weight:700;font-size:12px;border-radius:6px;cursor:pointer;font-family:var(--font);">⬇ Download FY Summary (CSV)</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT QUOTE MODAL -->
+<div class="modal-overlay" id="editModal" onclick="closeEditOnBg(event)" style="z-index:1100;">
+  <div class="modal-box" style="max-width:480px;padding:24px;">
+    <div style="font-size:15px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+      Edit Quote Details
+      <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Client Name</label>
+      <input type="text" id="editClientName" style="width:100%;">
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Project Title</label>
+      <input type="text" id="editJobTitle" style="width:100%;">
+    </div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Ref No.</label>
+        <input type="text" id="editRefNo">
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="editDate">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="saveEditModal()">💾 Save Changes</button>
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MATERIALS & RATES PANEL -->
+<div class="panel" id="panel-rates">
+  <div style="padding:22px 28px;max-width:1100px;">
+    <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Materials & Rates</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">Edit prices and machine rates — changes apply immediately to new quotes.</div>
+
+    <!-- MACHINES -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">⚙️</span> Machine Hourly Rates</div>
+      <div id="machineRatesTable" style="margin-top:8px;"></div>
+      <button class="add-item-btn" onclick="addMachineRate()" style="margin-top:10px;">+ Add Machine</button>
+    </div>
+
+    <!-- ACRYLIC -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🔷</span> Acrylic Prices ($ per sheet)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Size, Columns = Thickness (3mm / 5mm / 10mm)</div>
+      <div id="acrylicTable" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- PLYWOOD -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🟫</span> Plywood Prices ($ per sheet)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Size, Columns = Thickness (3mm / 5mm)</div>
+      <div id="plywoodTable" style="overflow-x:auto;"></div>
+
+      <div class="section-title" style="margin-top:20px;"><span class="section-title-icon">🪞</span> Acrylic Mirror — Silver (2mm)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">TF-SM Optical Silver · 4'×6' sheet</div>
+      <div id="acrylicSilverTable" style="overflow-x:auto;"></div>
+
+      <div class="section-title" style="margin-top:20px;"><span class="section-title-icon">🪞</span> Acrylic Mirror — Gold (2mm)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">TF-GM Optical Gold · 4'×8' sheet</div>
+      <div id="acrylicGoldTable" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- VINYL -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🎨</span> Vinyl Flat Rates ($ per piece)</div>
+      <div id="vinylTable" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- CARDBOARD -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">📦</span> Cardboard Single Wall ($ per sheet)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Thickness, Columns = Size (A0/A1/A2/A3)</div>
+      <div id="cardboardSingleTable" style="overflow-x:auto;"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">📦</span> Cardboard Double Wall ($ per sheet)</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Rows = Thickness, Columns = Size (A0/A1/A2/A3)</div>
+      <div id="cardboardDoubleTable" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- 3D PRINT -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🖨️</span> 3D Print Rate</div>
+      <div id="printRateTable" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- GYPSUM -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-icon">🏺</span> Gypsum Powder Prices</div>
+      <div id="gypsumTable" style="margin-top:8px;"></div>
+    </div>
+
+    <div style="margin-top:8px;padding:12px 16px;background:#fef9c3;border:1px solid #fbbf24;border-radius:8px;font-size:12px;color:#92400e;">
+      ⚠️ Changes are saved in this browser session only. To make permanent changes, the HTML file must be updated by your administrator.
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="modal-overlay" id="previewModal" onclick="closePreviewOnBg(event)">
+  <div class="modal-box">
+    <div class="modal-toolbar">
+      <span class="modal-toolbar-title">Quote Preview</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="printDocOnly()">🖨 Print</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveFromPreview(); closePreview();">💾 Save to Log</button>
+        <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:#444;" onclick="closePreview()">✕ Close</button>
+      </div>
+    </div>
+    <div id="quoteDocContent"></div>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ============================================================
+// DARK MODE
+// ============================================================
+function toggleDarkMode() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setDarkMode(!isDark);
+}
+
+function setDarkMode(dark) {
+  const btn = document.getElementById('darkModeToggle');
+  if (dark) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    if (btn) btn.textContent = '☀️';
+    localStorage.setItem('fablab_theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    if (btn) btn.textContent = '🌙';
+    localStorage.setItem('fablab_theme', 'light');
+  }
+  // Re-render rates panel so JS-generated table colours update
+  if (document.getElementById('panel-rates')?.classList.contains('active')) {
+    renderRatesPanel();
+  }
+}
+
+// ============================================================
+// DATA
+// ============================================================
+
+const PRICES = {
+  acrylic: { A7:{3:1,5:1.5,10:2.5}, A6:{3:2,5:3,10:5}, A5:{3:3.5,5:6,10:10}, A4:{3:7,5:12,10:20}, A3:{3:14,5:24,10:40}, A2:{3:28,5:48,10:80}, A1:{3:56,5:96,10:160}, A0:{3:112,5:192,10:320} },
+  acrylic_silver: { A7:2, A6:4.5, A5:8.5, A4:17.5, A3:35, A2:70, A1:140, A0:280.5 },
+  acrylic_gold:   { A7:2, A6:4.5, A5:8.5, A4:17.5, A3:35, A2:70, A1:140, A0:280.5 },
+  plywood: { A7:{3:1,5:1,15:2,20:3,28:5}, A6:{3:1,5:1,15:2,20:3,28:6}, A5:{3:1,5:2,15:4,20:6,28:10}, A4:{3:2,5:2,15:6,20:9,28:15}, A3:{3:3,5:4,15:10,20:15,28:25}, A2:{3:6,5:8,15:20,20:30,28:50}, A1:{3:10,5:14,15:36,20:54,28:90}, A0:{3:18,5:25,15:65,20:95,28:160} },
+  vinyl: { small:20, medium:45, large:85, xlarge:200 },
+  cardboard_single: { '1':{A0:6,A1:3,A2:2,A3:1}, '3':{A0:10,A1:5,A2:3,A3:1.5}, '5':{A0:18,A1:9,A2:5,A3:2}, '10':{A0:20,A1:10,A2:5,A3:3}, '15':{A0:22,A1:11,A2:6,A3:3} },
+  cardboard_double: { '5':{A0:27,A1:14,A2:7,A3:3}, '10':{A0:29,A1:15,A2:7,A3:4}, '15':{A0:31,A1:16,A2:8,A3:4} },
+  gypsum: { round:13, hexagon:13, cube_small:null }
+};
+const MACHINE_RATES = { '3d_printer':5, laser_cutter:40.5, large_format:45, cardboard_cutter:45, cnc:45 };
+const MACHINE_LABELS = { '3d_printer':'3D Printer ($5/hr)', laser_cutter:'Laser Cutter ($40.50/hr)', large_format:'Large Format Printer ($45/hr)', cardboard_cutter:'Cardboard Cutter ($45/hr)', cnc:'CNC ($45/hr)' };
+let lineItemCount = 0, accessoryCount = 0;
+let currentLogFilter = 'all';
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Restore saved theme preference
+  const savedTheme = localStorage.getItem('fablab_theme');
+  if (savedTheme === 'dark') setDarkMode(true);
+
+  const d = new Date();
+  document.getElementById('quoteDate').value = d.toISOString().split('T')[0];
+  addLineItem();
+  addAccessory();
+  updateQuoteType();
+  calcTotal();
+});
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'log') renderLog();
+  if (tab === 'rates') renderRatesPanel();
+}
+
+// ============================================================
+// LINE ITEMS
+// ============================================================
+function addLineItem() {
+  lineItemCount++;
+  const id = lineItemCount;
+  const div = document.createElement('div');
+  div.className = 'line-item';
+  div.id = `li-${id}`;
+  div.innerHTML = `
+    <div class="line-item-header">
+      <span class="line-item-num">Item #${id}</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="line-item-cost" id="li-cost-${id}">$0.00</span>
+        <button class="btn btn-danger" onclick="removeLineItem(${id})">✕ Remove</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Description / Label</label>
+        <input type="text" id="li-desc-${id}" placeholder="e.g. Acrylic name tag" oninput="calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Material Type</label>
+        <select id="li-type-${id}" onchange="onMaterialChange(${id})">
+          <option value="">— Select Material —</option>
+          <option value="acrylic">Acrylic</option>
+          <option value="acrylic_silver">Acrylic Mirror — Silver</option>
+          <option value="acrylic_gold">Acrylic Mirror — Gold</option>
+          <option value="plywood">Plywood</option>
+          <option value="vinyl">Vinyl (Large Format Printer)</option>
+          <option value="cardboard_single">Cardboard Single Wall</option>
+          <option value="cardboard_double">Cardboard Double Wall</option>
+          <option value="3dprint">3D Print — PLA / PETG</option>
+          <option value="gypsum">Gypsum Powder</option>
+        </select>
+      </div>
+    </div>
+    <div id="li-fields-${id}"></div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label>Machine</label>
+          <select id="li-machine-${id}" onchange="calcTotal()" disabled>
+            <option value="">Select material</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Time / Item</label>
+          <div style="display:flex;gap:4px;">
+            <input type="number" id="li-hrs-${id}" value="0" min="0" step="0.25" style="width:100%;" oninput="calcTotal()">
+            <select id="li-hrsunit-${id}" onchange="updateHrsStep(${id}); calcTotal()" style="width:80px;flex-shrink:0;">
+              <option value="hrs">hrs</option>
+              <option value="mins">mins</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="li-qty-${id}" value="1" min="1" oninput="calcTotal()">
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('lineItems').appendChild(div);
+}
+
+function removeLineItem(id) {
+  const el = document.getElementById(`li-${id}`);
+  if (el) el.remove();
+  calcTotal();
+}
+
+
+function onMaterialChange(id) {
+  const type = document.getElementById(`li-type-${id}`).value;
+  const fieldsDiv = document.getElementById(`li-fields-${id}`);
+  const machineSelect = document.getElementById(`li-machine-${id}`);
+  machineSelect.disabled = true;
+  // Re-show hrs/machine in case switching away from vinyl
+  const hrsGroup = document.getElementById(`li-hrs-${id}`)?.closest('.form-group');
+  const machineGroup = machineSelect?.closest('.form-group');
+  if (hrsGroup) hrsGroup.style.display = '';
+  if (machineGroup) machineGroup.style.display = '';
+
+  if (type === 'acrylic') {
+    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,10], 'A5');
+    setMachine(machineSelect, 'laser_cutter');
+  } else if (type === 'acrylic_silver' || type === 'acrylic_gold') {
+    const mirrorLabel = type === 'acrylic_silver' ? 'Silver Mirror' : 'Gold Mirror';
+    fieldsDiv.innerHTML = `<div class="form-row">
+      <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
+        ${['A7','A6','A5','A4','A3','A2','A1','A0'].map(s=>`<option${s==='A5'?' selected':''} >${s}</option>`).join('')}
+      </select></div>
+      <div class="form-group"><label>Thickness</label>
+        <input type="text" value="2mm" readonly style="color:var(--text-muted);">
+      </div>
+    </div>`;
+    setMachine(machineSelect, 'laser_cutter');
+  } else if (type === 'plywood') {
+    fieldsDiv.innerHTML = sizeThickFields(id, ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,15,20,28], 'A5');
+    // Plywood can use Laser Cutter or CNC — let staff choose
+    machineSelect.disabled = false;
+    machineSelect.innerHTML = `
+      <option value="laser_cutter">${MACHINE_LABELS['laser_cutter']}</option>
+      <option value="cnc">${MACHINE_LABELS['cnc']}</option>
+    `;
+  } else if (type === 'vinyl') {
+    fieldsDiv.innerHTML = `<div class="form-row">
+      <div class="form-group"><label>Size</label><select id="li-tier-${id}" onchange="updateVinylPrice(${id}); calcTotal()">
+        <option value="small">Small — up to 0.3m</option>
+        <option value="medium">Medium — 0.3m to 1m</option>
+        <option value="large">Large — 1m to 2m</option>
+        <option value="xlarge">Extra Large — 2m to 5m</option>
+      </select></div>
+      <div class="form-group"><label>Price</label>
+        <input type="text" id="li-vinyl-price-${id}" readonly style="font-weight:700;color:var(--accent);">
+      </div>
+    </div>`;
+    // Hide hours, disable machine (included in flat rate)
+    const hrsRow = document.getElementById('li-hrs-${id}')?.closest('.form-group');
+    const machineRow = document.getElementById('li-machine-${id}')?.closest('.form-group');
+    if (hrsRow) hrsRow.style.display = 'none';
+    if (machineRow) machineRow.style.display = 'none';
+    machineSelect.disabled = true;
+    machineSelect.innerHTML = '<option value="">Included in price</option>';
+    updateVinylPrice(id);
+  } else if (type === 'cardboard_single' || type === 'cardboard_double') {
+    fieldsDiv.innerHTML = `<div class="form-row">
+      <div class="form-group"><label>Thickness</label><select id="li-thick-${id}" onchange="calcTotal()">
+        <option value="1">1mm</option><option value="3">3mm</option><option value="5">5mm</option><option value="10">10mm</option><option value="15">15mm</option>
+      </select></div>
+      <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
+        <option value="A0" selected>A0</option><option value="A1">A1</option><option value="A2">A2</option><option value="A3">A3</option>
+      </select></div></div>`;
+    setMachine(machineSelect, 'cardboard_cutter');
+  } else if (type === '3dprint') {
+    fieldsDiv.innerHTML = `<div class="form-row form-row-3">
+      <div class="form-group"><label>Filament</label><select id="li-filament-${id}" onchange="calcTotal()">
+        <option value="PLA">PLA ($25/kg)</option><option value="PETG">PETG ($25/kg)</option>
+      </select></div>
+      <div class="form-group"><label>Weight (grams)</label><input type="number" id="li-grams-${id}" value="0" min="0" oninput="calcTotal()"></div>
+      <div class="form-group"><label>Filament Cost</label><input type="text" id="li-filcost-${id}" readonly></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>🎨 Colours</label>
+        <select id="li-colourmode-${id}" onchange="calcTotal()" style="width:100%;">
+          <option value="single">Single Colour — no surcharge</option>
+          <option value="2">2 Colours (+5%)</option>
+          <option value="3">3 Colours (+10%)</option>
+          <option value="4">4 Colours (+15%)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Colour Surcharge</label>
+        <input type="text" id="li-coloursurcharge-${id}" readonly style="font-weight:700;color:#7c3aed;">
+      </div>
+    </div>`;
+    setMachine(machineSelect, '3d_printer');
+  } else if (type === 'gypsum') {
+    fieldsDiv.innerHTML = `<div class="form-row">
+      <div class="form-group"><label>Shape / Size</label><select id="li-gypsum-shape-${id}" onchange="onGypsumShapeChange(${id}); calcTotal()">
+        <option value="round">Round ($13 each)</option>
+        <option value="hexagon">Hexagon ($13 each)</option>
+        <option value="cube_small">Cube (Small) — Custom price</option>
+        <option value="others">Others &#8212; Custom price</option>
+      </select></div>
+      <div class="form-group"><label>Unit Price ($)</label><input type="number" id="li-gypsum-price-${id}" value="13" min="0" step="0.01" oninput="calcTotal()"></div>
+    </div>`;
+    machineSelect.disabled = true;
+    machineSelect.innerHTML = '<option value="">No machine required</option>';
+  } else {
+    fieldsDiv.innerHTML = '';
+    machineSelect.innerHTML = '<option value="">Select material first</option>';
+  }
+    calcTotal();
+}
+
+function sizeThickFields(id, sizes, thicknesses, defaultSize) {
+  return `<div class="form-row">
+    <div class="form-group"><label>Size</label><select id="li-size-${id}" onchange="calcTotal()">
+      ${sizes.map(s=>`<option${defaultSize && s===defaultSize ? ' selected' : ''}>${s}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Thickness</label><select id="li-thick-${id}" onchange="calcTotal()">
+      ${thicknesses.map(t=>`<option value="${t}">${t}mm</option>`).join('')}
+    </select></div>
+  </div>`;
+}
+
+function updateHrsStep(id) {
+  const unit = document.getElementById('li-hrsunit-' + id)?.value;
+  const inp  = document.getElementById('li-hrs-' + id);
+  if (!inp) return;
+  if (unit === 'mins') {
+    inp.step = '1';
+    inp.min  = '0';
+    // Convert any existing value from hrs to mins
+    const cur = parseFloat(inp.value) || 0;
+    if (cur > 0 && cur < 10) inp.value = Math.round(cur * 60);
+  } else {
+    inp.step = '0.25';
+    inp.min  = '0';
+    // Convert any existing value from mins to hrs
+    const cur = parseFloat(inp.value) || 0;
+    if (cur >= 10) inp.value = (cur / 60).toFixed(2);
+  }
+}
+
+function updateVinylPrice(id) {
+  const tier = document.getElementById('li-tier-'+id)?.value || 'small';
+  const prices = { small:20, medium:45, large:85, xlarge:200 };
+  const el = document.getElementById('li-vinyl-price-'+id);
+  if (el) el.value = '$' + (prices[tier] || 0).toFixed(2);
+}
+
+function setMachine(select, value) {
+  select.disabled = false;
+  select.innerHTML = `<option value="${value}">${MACHINE_LABELS[value]}</option>`;
+}
+
+function onGypsumShapeChange(id) {
+  const shape = document.getElementById(`li-gypsum-shape-${id}`)?.value;
+  const priceInput = document.getElementById(`li-gypsum-price-${id}`);
+  if (!priceInput) return;
+  if (shape === 'round' || shape === 'hexagon') {
+    priceInput.value = 13;
+    priceInput.readOnly = false;
+  } else {
+    priceInput.value = '';
+    priceInput.readOnly = false;
+    priceInput.placeholder = 'Enter custom price';
+  }
+}
+
+// ============================================================
+// ACCESSORIES
+// ============================================================
+function addAccessory() {
+  accessoryCount++;
+  const id = accessoryCount;
+  const div = document.createElement('div');
+  div.className = 'acc-row';
+  div.id = `acc-${id}`;
+  div.innerHTML = `
+    <input type="text" placeholder="e.g. M3 screws, paint" id="acc-desc-${id}">
+    <input type="number" placeholder="Qty" id="acc-qty-${id}" value="1" min="1" step="1" oninput="calcTotal()" style="text-align:center;">
+    <select id="acc-unit-${id}" style="font-size:12px;" onchange="calcTotal()">
+      <option value="pcs">pcs</option>
+      <option value="lot">lot</option>
+      <option value="roll">roll</option>
+      <option value="set">set</option>
+      <option value="box">box</option>
+      <option value="m">m</option>
+    </select>
+    <input type="number" placeholder="$/unit" id="acc-cost-${id}" min="0" step="0.01" oninput="calcTotal()">
+    <button class="btn btn-danger" onclick="removeAcc(${id})">✕</button>`;
+  document.getElementById('accessories').appendChild(div);
+}
+
+function removeAcc(id) {
+  const el = document.getElementById(`acc-${id}`);
+  if (el) el.remove();
+  calcTotal();
+}
+
+// ============================================================
+// TOGGLES
+// ============================================================
+function toggleSection(fieldId) {
+  const el = document.getElementById(fieldId);
+  const checkId = { designFields:'toggleDesign', helperFields:'toggleHelpers', expeditedFields:'toggleExpedited', staffFields:'toggleStaff', projExpFields:'toggleProjExp' }[fieldId];
+  const checked = document.getElementById(checkId)?.checked;
+  if (checked) el.classList.add('show'); else el.classList.remove('show');
+  calcTotal();
+}
+
+function updateDesignValueLabel() {
+  const mode = document.getElementById('designMode')?.value;
+  const lbl = document.getElementById('designValueLabel');
+  if (lbl) lbl.textContent = mode === 'fixed' ? 'Value ($)' : 'Value (%)';
+}
+
+function updateQuoteType() {
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const isInternal = type === 'internal';
+  const isWorkshop = type === 'workshop';
+  const isExternal = type === 'external';
+
+  // Badge
+  const badge = document.getElementById('quoteBadge');
+  badge.className = 'badge badge-' + (isWorkshop ? 'workshop' : type);
+  badge.textContent = isWorkshop ? 'Workshop / Course' : (type.charAt(0).toUpperCase() + type.slice(1));
+
+  // Sidebar green for workshop
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) {
+    if (isWorkshop) sidebar.classList.add('workshop-mode');
+    else sidebar.classList.remove('workshop-mode');
+  }
+
+  // Tax note
+  document.getElementById('taxNote').textContent = isInternal
+    ? 'Internal: No SP Surcharge or GST applied.'
+    : 'External: SP Charge Rate (18.5%) applied.';
+
+  // Ref prefix — hide SP-TTC/ for workshop
+  const refPrefix = document.getElementById('refPrefix');
+  if (refPrefix) refPrefix.style.display = isWorkshop ? 'none' : '';
+
+  // Show/hide external-only extras
+  document.getElementById('staffChargesWrap').style.display = isInternal ? 'none' : '';
+  document.getElementById('projExpWrap').style.display = isInternal ? 'none' : '';
+
+  // Show/hide workshop vs standard sections
+  document.getElementById('lineItems').closest('.section').style.display = isWorkshop ? 'none' : '';
+  document.getElementById('accessories').closest('.section').style.display = isWorkshop ? 'none' : '';
+  document.getElementById('workshopSection').style.display = isWorkshop ? '' : 'none';
+
+  // Show/hide Design Fee + Expedited for workshop
+  const designRow = document.getElementById('toggleDesign')?.closest('.toggle-row');
+  const expeditedRow = document.getElementById('toggleExpedited')?.closest('.toggle-row');
+  const designFields = document.getElementById('designFields');
+  const expeditedFields = document.getElementById('expeditedFields');
+  if (designRow) designRow.style.display = isWorkshop ? 'none' : '';
+  if (expeditedRow) expeditedRow.style.display = isWorkshop ? 'none' : '';
+  if (designFields) designFields.style.display = isWorkshop ? 'none' : '';
+  if (expeditedFields) expeditedFields.style.display = isWorkshop ? 'none' : '';
+
+  // Charge Rates section — hidden for internal, locked for external, togglable for workshop
+  const crWrap = document.getElementById('chargeRatesWrap');
+  const rateEditBtn = document.getElementById('rateEditBtn');
+  const workshopChargeToggle = document.getElementById('workshopChargeToggle');
+  const rateInputs = ['rateSP','rateTIE','rateGST'].map(id => document.getElementById(id));
+
+  if (isInternal) {
+    if (crWrap) crWrap.style.display = 'none';
+  } else if (isExternal) {
+    if (crWrap) crWrap.style.display = '';
+    if (rateEditBtn) rateEditBtn.style.display = '';
+    if (workshopChargeToggle) workshopChargeToggle.style.display = 'none';
+    // Lock inputs, reset edit button to locked state
+    rateInputs.forEach(el => { if (el) el.readOnly = true; });
+    if (rateEditBtn) {
+      rateEditBtn.textContent = '🔒 Edit';
+      rateEditBtn.style.color = 'var(--text-muted)';
+      rateEditBtn.style.borderColor = 'var(--border)';
+    }
+  } else if (isWorkshop) {
+    if (crWrap) crWrap.style.display = '';
+    if (rateEditBtn) rateEditBtn.style.display = 'none';
+    if (workshopChargeToggle) { workshopChargeToggle.style.display = ''; workshopChargeToggle.style.display = 'flex'; }
+    // Unlock inputs for workshop (toggle controls whether charges apply)
+    rateInputs.forEach(el => { if (el) el.readOnly = false; });
+  }
+
+  // Colour-code main panel
+  const mainEl = document.querySelector('.main');
+  if (mainEl) {
+    mainEl.classList.remove('type-internal','type-external','type-workshop');
+    mainEl.classList.add('type-' + type);
+  }
+
+  calcTotal();
+}
+
+// ============================================================
+// CALC MATERIAL COST
+// ============================================================
+function calcMaterialCost(id) {
+  const type = document.getElementById(`li-type-${id}`)?.value;
+  if (!type) return { mat: 0, machine: 0, hrs: 0, desc: '' };
+
+  const qty = parseInt(document.getElementById(`li-qty-${id}`)?.value || 1);
+  const hrsRaw = parseFloat(document.getElementById(`li-hrs-${id}`)?.value || 0);
+  const hrsUnit = document.getElementById(`li-hrsunit-${id}`)?.value || 'hrs';
+  const hrsPerItem = hrsUnit === 'mins' ? hrsRaw / 60 : hrsRaw;
+  const totalHrs = hrsPerItem * qty;
+  const machine = document.getElementById(`li-machine-${id}`)?.value;
+  const machineCost = totalHrs * (MACHINE_RATES[machine] || 0);
+  let matPerItem = 0, descDetail = type;
+
+  if (type === 'acrylic' || type === 'plywood') {
+    const size = document.getElementById(`li-size-${id}`)?.value || 'A4';
+    const thick = document.getElementById(`li-thick-${id}`)?.value || '3';
+    matPerItem = PRICES[type]?.[size]?.[parseInt(thick)] || 0;
+    descDetail = `${type === 'plywood' ? 'Plywood' : 'Acrylic'} · ${size} · ${thick}mm`;
+  } else if (type === 'acrylic_silver' || type === 'acrylic_gold') {
+    const size = document.getElementById(`li-size-${id}`)?.value || 'A4';
+    const pt = PRICES[type];
+    matPerItem = pt?.[size] || 0;
+    const mirrorLabel = type === 'acrylic_silver' ? 'Acrylic Mirror Silver' : 'Acrylic Mirror Gold';
+    descDetail = `${mirrorLabel} · ${size} · 2mm`;
+  } else if (type === 'vinyl') {
+    const tier = document.getElementById(`li-tier-${id}`)?.value || 'small';
+    matPerItem = PRICES.vinyl[tier] || 0;
+    const tierLabel = { small:'Small (up to 0.3m)', medium:'Medium (0.3m–1m)', large:'Large (1m–2m)', xlarge:'Extra Large (2m–5m)' }[tier] || tier;
+    descDetail = `Vinyl · ${tierLabel}`;
+  } else if (type === 'cardboard_single' || type === 'cardboard_double') {
+    const pt = type === 'cardboard_single' ? PRICES.cardboard_single : PRICES.cardboard_double;
+    const thick = document.getElementById(`li-thick-${id}`)?.value || '5';
+    const size = document.getElementById(`li-size-${id}`)?.value || 'A1';
+    matPerItem = pt[thick]?.[size] || 0;
+    descDetail = `${type.replace('_',' ')} · ${thick}mm · ${size}`;
+  } else if (type === '3dprint') {
+    const g = parseFloat(document.getElementById(`li-grams-${id}`)?.value || 0);
+    const rate3d = PRICES._3dprint_rate || 25;
+    const baseFilCost = (g / 1000) * rate3d;
+    const colourMode = document.getElementById(`li-colourmode-${id}`)?.value || 'single';
+    const colourCount = colourMode === 'single' ? 1 : parseInt(colourMode) || 1;
+    const colourPct = colourMode === 'single' ? 0 : (colourCount - 1) * 0.05;
+    const colourSurcharge = baseFilCost * colourPct;
+    matPerItem = baseFilCost + colourSurcharge;
+    const fil = document.getElementById(`li-filament-${id}`)?.value || 'PLA';
+    const colourLabel = colourMode !== 'single' ? ` · ${colourCount} Colours` : '';
+    descDetail = `3D Print · ${fil} · ${g}g${colourLabel}`;
+    const fc = document.getElementById(`li-filcost-${id}`);
+    if (fc) fc.value = '$' + baseFilCost.toFixed(2);
+    const cs = document.getElementById(`li-coloursurcharge-${id}`);
+    if (cs) cs.value = colourPct > 0 ? '+$' + colourSurcharge.toFixed(2) + ' (+' + Math.round(colourPct*100) + '%)' : '—';
+  } else if (type === 'gypsum') {
+    const shape = document.getElementById(`li-gypsum-shape-${id}`)?.value || 'round';
+    matPerItem = parseFloat(document.getElementById(`li-gypsum-price-${id}`)?.value || 0);
+    const shapeLabel = { round:'Round', hexagon:'Hexagon', cube_small:'Cube (Small)', others:'Others' }[shape] || shape;
+    descDetail = `Gypsum Powder · ${shapeLabel}`;
+  }
+
+  return { mat: matPerItem * qty, machine: machineCost, hrs: totalHrs, descDetail };
+}
+
+// ============================================================
+// CALC TOTAL
+// ============================================================
+function calcTotal() {
+  const isExternal = document.querySelector('input[name="quoteType"]:checked').value === 'external';
+  let totalMat = 0, totalMachine = 0, totalHrs = 0;
+
+  document.querySelectorAll('.line-item').forEach(item => {
+    const id = item.id.replace('li-','');
+    const r = calcMaterialCost(id);
+    totalMat += r.mat; totalMachine += r.machine; totalHrs += r.hrs;
+    const el = document.getElementById(`li-cost-${id}`);
+    if (el) el.textContent = '$' + (r.mat + r.machine).toFixed(2);
+  });
+
+  let accTotal = 0;
+  document.querySelectorAll('[id^="acc-cost-"]').forEach(el => {
+    const id = el.id.replace('acc-cost-','');
+    const qty = parseFloat(document.getElementById('acc-qty-'+id)?.value||1);
+    accTotal += (parseFloat(el.value)||0) * qty;
+  });
+
+  let subtotal = totalMat + totalMachine + accTotal;
+  const helpersOn = document.getElementById('toggleHelpers').checked;
+  let helperCost = 0;
+  if (helpersOn) {
+    const count = parseInt(document.getElementById('helperCount')?.value||1);
+    const hrs = parseFloat(document.getElementById('helperHours')?.value||0);
+    helperCost = count * hrs * 11;
+    const hcd = document.getElementById('helperCostDisplay');
+    if (hcd) hcd.value = '$' + helperCost.toFixed(2);
+  }
+  subtotal += helperCost;
+
+  // Workshop — use overall course price
+  let workshopTotal = 0;
+  const overallPrice = parseFloat(document.getElementById('overallCoursePrice')?.value || 0);
+  workshopTotal = overallPrice;
+  subtotal += workshopTotal;
+
+  // Staff charges — multi-item
+  const staffOn = document.getElementById('toggleStaff')?.checked;
+  let staffCost = 0;
+  if (staffOn) {
+    const items = getStaffItems();
+    staffCost = items.reduce((sum, it) => sum + it.sub, 0);
+    const scd = document.getElementById('staffCostDisplay');
+    if (scd) scd.textContent = '$' + staffCost.toFixed(2);
+  }
+  subtotal += staffCost;
+
+  // Project expenses
+  const projExpOn = document.getElementById('toggleProjExp')?.checked;
+  let projExpAmount = 0;
+  if (projExpOn) {
+    const peItems = getProjExpItems();
+    projExpAmount = peItems.reduce((sum, it) => sum + it.amount, 0);
+    const pet = document.getElementById('projExpTotal');
+    if (pet) pet.textContent = '$' + projExpAmount.toFixed(2);
+  }
+  subtotal += projExpAmount;
+
+  const expedited = document.getElementById('toggleExpedited').checked;
+  const expeditedPct = parseFloat(document.getElementById('expeditedPct')?.value||50) / 100;
+  const expeditedOnProjExp = document.getElementById('expeditedOnProjExp')?.checked;
+  const expeditedBase = (totalMat + totalMachine) + (expeditedOnProjExp ? projExpAmount : 0);
+  const expeditedFee = expedited ? expeditedBase * expeditedPct : 0;
+  const expPctLabel = document.getElementById('expeditedPct')?.value || '50';
+  if (expedited) { const ed = document.getElementById('expeditedDisplay'); if(ed) ed.value = '$' + expeditedFee.toFixed(2); }
+  subtotal += expeditedFee;
+
+  const designOn = document.getElementById('toggleDesign').checked;
+  let designFee = 0;
+  if (designOn) {
+    const mode = document.getElementById('designMode')?.value;
+    const val = parseFloat(document.getElementById('designValue')?.value||20);
+    designFee = mode === 'percent' ? (totalMat + totalMachine) * (val/100) : val;
+  }
+  subtotal += designFee;
+
+  const qType = document.querySelector('input[name="quoteType"]:checked').value;
+  const isWorkshopType = qType === 'workshop';
+  // Read live rates from inputs
+  const rateSP  = parseFloat(document.getElementById('rateSP')?.value  || 18.5) / 100;
+  const rateTIE = parseFloat(document.getElementById('rateTIE')?.value || 11.5) / 100;
+  const rateGST = parseFloat(document.getElementById('rateGST')?.value || 9)    / 100;
+  const rateSPpct  = parseFloat(document.getElementById('rateSP')?.value  || 18.5);
+  const rateTIEpct = parseFloat(document.getElementById('rateTIE')?.value || 11.5);
+  const rateGSTpct = parseFloat(document.getElementById('rateGST')?.value || 9);
+  let spCharge = 0, tieFee = 0, gst = 0, grand = subtotal;
+  let costExclGST = subtotal, costInclGST = subtotal;
+  const workshopChargesOn = !isWorkshopType || (document.getElementById('workshopChargesEnabled')?.checked !== false);
+  const forceSpTie = document.getElementById('forceSpTie')?.checked;
+  const spTieApplies = staffCost > 0 || forceSpTie;
+  if (isExternal || (isWorkshopType && workshopChargesOn)) {
+    // Correct formula:
+    //   Overall Project Fee (excl. GST) = nonStaffSubtotal + ROUNDUP(staffCost / 0.7, 2)
+    //   SP and TIE only apply when there are staff charges OR forceSpTie is checked
+    const nonStaffSubtotal = subtotal - staffCost;
+    const grossedStaff = staffCost > 0 ? Math.ceil(staffCost / 0.7 * 100) / 100 : 0;
+    if (spTieApplies) {
+      const grossBase = staffCost > 0 ? grossedStaff : subtotal;
+      spCharge = grossBase * rateSP;
+      tieFee   = grossBase * rateTIE;
+      costExclGST = staffCost > 0 ? (nonStaffSubtotal + grossedStaff) : subtotal;
+    } else {
+      // No staff, no force — no SP/TIE, just subtotal
+      costExclGST = subtotal;
+    }
+    gst         = costExclGST * rateGST;
+    costInclGST = costExclGST + gst;
+    grand       = costInclGST;
+  } else if (isWorkshopType) {
+    // Workshop with charges disabled — GST on subtotal only
+    costExclGST = subtotal;
+    gst         = costExclGST * rateGST;
+    costInclGST = costExclGST + gst;
+    grand       = costInclGST;
+  }
+
+  // summary
+  const lines = [];
+  if (totalMat > 0) lines.push(['Material Cost', totalMat]);
+  if (totalMachine > 0) lines.push(['Machine Cost', totalMachine]);
+  if (accTotal > 0) lines.push(['Accessories', accTotal]);
+  if (workshopTotal > 0) lines.push(['Course Fee', workshopTotal]);
+  if (helperCost > 0) {
+    const hCount = parseInt(document.getElementById('helperCount')?.value||1);
+    lines.push(['Student Helper/Agent' + (hCount > 1 ? ' × ' + hCount : ''), helperCost]);
+  }
+  if (staffCost > 0) lines.push(['Staff Charges', staffCost]);
+  if (projExpAmount > 0) {
+    const peItems = getProjExpItems();
+    if (peItems.length === 1) {
+      lines.push([peItems[0].desc || 'Project Expenses', peItems[0].amount]);
+    } else if (peItems.length > 1) {
+      lines.push(['Project Expenses', projExpAmount]);
+    }
+  }
+  if (expeditedFee > 0) lines.push([`Expedited (${expPctLabel}%)`, expeditedFee]);
+  if (designFee > 0) lines.push(['Design Fee', designFee]);
+  if (isExternal || (isWorkshopType && workshopChargesOn)) {
+    // Show grossed-up staff cost breakdown for staff reference
+    if (staffCost > 0) {
+      const grossedStaffRef = Math.ceil(staffCost / 0.7 * 100) / 100;
+      lines.push(['Overall Project Fee (excl. GST)', costExclGST]);
+    }
+    if (spCharge > 0) lines.push([`🔒 SP Charges (${rateSPpct}%)`, spCharge]);
+    if (tieFee  > 0) lines.push([`🔒 TIE Charges (${rateTIEpct}%)`, tieFee]);
+  }
+  if ((isExternal || isWorkshopType) && gst > 0) lines.push([`GST (${rateGSTpct}%)`, gst]);
+
+  const tieNote = ''; // TIE now shown as a summary line above
+
+  const summaryHTML = lines.map(([l,v])=>
+    `<div class="summary-line"><span class="lbl">${l}</span><span class="val">${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}</span></div>`
+  ).join('');
+
+  document.getElementById('summaryLines').innerHTML = summaryHTML
+    || `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
+  document.getElementById('summaryTotal').textContent = '$' + grand.toFixed(2);
+
+  const fpEl = document.getElementById('finePrintSidebar');
+  fpEl.style.display = helpersOn ? 'block' : 'none';
+
+  // Update date duration display if in workshop mode
+  const qTypeNow = document.querySelector('input[name="quoteType"]:checked').value;
+  if (qTypeNow === 'workshop') getWorkshopDateInfo();
+
+  // Update tax note based on actual charges applied
+  const taxNoteEl = document.getElementById('taxNote');
+  if (taxNoteEl) {
+    if (isExternal) {
+      if (spTieApplies) {
+        taxNoteEl.textContent = 'External: SP Charge Rate (' + rateSPpct + '%) & TIE (' + rateTIEpct + '%) applied.';
+        taxNoteEl.style.display = '';
+      } else {
+        taxNoteEl.textContent = 'External: GST (' + rateGSTpct + '%) applied.';
+        taxNoteEl.style.display = '';
+      }
+    } else if (isWorkshopType) {
+      taxNoteEl.style.display = '';
+      taxNoteEl.textContent = workshopChargesOn
+        ? 'Workshop: SP Charge Rate (' + rateSPpct + '%) + GST applied.'
+        : 'Workshop: GST (' + rateGSTpct + '%) applied only.';
+    } else {
+      taxNoteEl.textContent = 'Internal: No SP Surcharge or GST applied.';
+      taxNoteEl.style.display = '';
+    }
+  }
+
+  const helperCountVal = parseInt(document.getElementById('helperCount')?.value||1);
+  window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, helperCount: helpersOn ? helperCountVal : 0, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct, workshopChargesOn };
+}
+
+// ============================================================
+// STAFF CHARGES — multi-item
+// ============================================================
+let staffItemCount = 0;
+
+function addStaffItem(role, rate, hrs, count) {
+  staffItemCount++;
+  const id = staffItemCount;
+  const div = document.createElement('div');
+  div.id = 'staff-item-' + id;
+  div.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;';
+  div.innerHTML = `
+    <div class="form-row" style="margin-bottom:6px;">
+      <div class="form-group" style="flex:2;">
+        <label>Role</label>
+        <select id="staff-role-${id}" onchange="calcTotal()">
+          <option value="Lecturer"${(role||'Lecturer')==='Lecturer'?' selected':''}>Lecturer</option>
+          <option value="TSO"${role==='TSO'?' selected':''}>TSO</option>
+          <option value="MSO"${role==='MSO'?' selected':''}>MSO</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:0 0 28px;display:flex;align-items:flex-end;padding-bottom:2px;">
+        <button onclick="removeStaffItem(${id})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:0;line-height:1;" title="Remove">✕</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Rate ($/hr)</label>
+        <input type="number" id="staff-rate-${id}" value="${rate||0}" min="0" step="0.01" oninput="calcStaffItem(${id}); calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Hours</label>
+        <input type="number" id="staff-hrs-${id}" value="${hrs||0}" min="0" step="0.5" oninput="calcStaffItem(${id}); calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Count</label>
+        <input type="number" id="staff-count-${id}" value="${count||1}" min="1" oninput="calcStaffItem(${id}); calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Subtotal</label>
+        <input type="text" id="staff-sub-${id}" readonly style="font-weight:600;">
+      </div>
+    </div>`;
+  document.getElementById('staffItems').appendChild(div);
+  calcStaffItem(id);
+}
+
+function calcStaffItem(id) {
+  const rate  = parseFloat(document.getElementById('staff-rate-'+id)?.value  || 0);
+  const hrs   = parseFloat(document.getElementById('staff-hrs-'+id)?.value   || 0);
+  const count = parseInt(document.getElementById('staff-count-'+id)?.value   || 1);
+  const sub   = rate * hrs * count;
+  const el    = document.getElementById('staff-sub-'+id);
+  if (el) el.value = '$' + sub.toFixed(2);
+}
+
+function removeStaffItem(id) {
+  const el = document.getElementById('staff-item-'+id);
+  if (el) el.remove();
+  calcTotal();
+}
+
+function getStaffItems() {
+  const items = [];
+  document.querySelectorAll('[id^="staff-item-"]').forEach(div => {
+    const id = div.id.replace('staff-item-','');
+    const rate  = parseFloat(document.getElementById('staff-rate-'+id)?.value  || 0);
+    const hrs   = parseFloat(document.getElementById('staff-hrs-'+id)?.value   || 0);
+    const count = parseInt(document.getElementById('staff-count-'+id)?.value   || 1);
+    const role  = document.getElementById('staff-role-'+id)?.value || '';
+    items.push({ id, role, rate, hrs, count, sub: rate * hrs * count });
+  });
+  return items;
+}
+
+// ============================================================
+// PROJECT EXPENSES — multi-item
+// ============================================================
+let projExpItemCount = 0;
+
+function addProjExpItem(desc, amount) {
+  projExpItemCount++;
+  const id = projExpItemCount;
+  const div = document.createElement('div');
+  div.id = 'projexp-item-' + id;
+  div.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;';
+  div.innerHTML = `
+    <div class="form-row">
+      <div class="form-group" style="flex:2;">
+        <label>Description</label>
+        <input type="text" id="projexp-desc-${id}" placeholder="e.g. Transport, printing" value="${desc||''}" oninput="calcTotal()">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label>Amount ($)</label>
+        <input type="number" id="projexp-amt-${id}" value="${amount||0}" min="0" step="0.01" oninput="calcTotal()">
+      </div>
+      <div class="form-group" style="flex:0 0 28px;display:flex;align-items:flex-end;padding-bottom:2px;">
+        <button onclick="removeProjExpItem(${id})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:0;line-height:1;" title="Remove">✕</button>
+      </div>
+    </div>`;
+  document.getElementById('projExpItems').appendChild(div);
+}
+
+function removeProjExpItem(id) {
+  const el = document.getElementById('projexp-item-' + id);
+  if (el) el.remove();
+  calcTotal();
+}
+
+function getProjExpItems() {
+  const items = [];
+  document.querySelectorAll('[id^="projexp-item-"]').forEach(div => {
+    const id = div.id.replace('projexp-item-','');
+    const desc   = document.getElementById('projexp-desc-'+id)?.value || '';
+    const amount = parseFloat(document.getElementById('projexp-amt-'+id)?.value || 0);
+    items.push({ id, desc, amount });
+  });
+  return items;
+}
+
+// ============================================================
+// CHARGE RATE EDIT TOGGLE (external only)
+// ============================================================
+function toggleRateEdit() {
+  const inputs = ['rateSP','rateTIE','rateGST'].map(id => document.getElementById(id));
+  const btn = document.getElementById('rateEditBtn');
+  const isLocked = inputs[0]?.readOnly;
+  inputs.forEach(el => { if (el) el.readOnly = !isLocked; });
+  if (btn) {
+    btn.textContent = isLocked ? '🔓 Editing' : '🔒 Edit';
+    btn.style.color  = isLocked ? 'var(--accent)' : 'var(--text-muted)';
+    btn.style.borderColor = isLocked ? 'var(--accent)' : 'var(--border)';
+  }
+}
+
+// ============================================================
+// DATE FORMAT
+// ============================================================
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = new Date(dateStr);
+  return `${String(d.getUTCDate()).padStart(2,'0')}-${months[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
+}
+
+// ============================================================
+// WORKSHOP DATES
+// ============================================================
+let currentDateMode = 'continuous';
+let specificDateCount = 0;
+
+function setDateMode(mode) {
+  currentDateMode = mode;
+  document.getElementById('dateContinuousBlock').style.display = mode === 'continuous' ? '' : 'none';
+  document.getElementById('dateSpecificBlock').style.display = mode === 'specific' ? '' : 'none';
+  document.getElementById('dateModeContBtn').classList.toggle('active', mode === 'continuous');
+  document.getElementById('dateModeSpecBtn').classList.toggle('active', mode === 'specific');
+  calcTotal();
+}
+
+function addSpecificDate() {
+  specificDateCount++;
+  const id = specificDateCount;
+  const div = document.createElement('div');
+  div.className = 'specific-date-row';
+  div.id = 'spec-date-row-' + id;
+  div.innerHTML =
+    '<input type="date" id="spec-date-' + id + '" onchange="updateSpecificDaysCount(); calcTotal();" style="flex:1;">' +
+    '<button class="btn btn-danger btn-sm" onclick="removeSpecificDate(' + id + ')">✕</button>';
+  document.getElementById('specificDatesList').appendChild(div);
+  updateSpecificDaysCount();
+}
+
+function removeSpecificDate(id) {
+  const el = document.getElementById('spec-date-row-' + id);
+  if (el) el.remove();
+  updateSpecificDaysCount();
+  calcTotal();
+}
+
+function updateSpecificDaysCount() {
+  const dates = [];
+  document.querySelectorAll('[id^="spec-date-"]').forEach(inp => {
+    if (inp.value) dates.push(inp.value);
+  });
+  const el = document.getElementById('specificDaysCount');
+  if (el) el.textContent = dates.length > 0 ? dates.length + ' day(s) selected' : '';
+}
+
+function getWorkshopDateInfo() {
+  if (currentDateMode === 'continuous') {
+    const from = document.getElementById('dateFrom')?.value;
+    const to = document.getElementById('dateTo')?.value;
+    if (from && to) {
+      const d1 = new Date(from), d2 = new Date(to);
+      const diffMs = d2 - d1;
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+      const dispEl = document.getElementById('dateDurationDisplay');
+      if (dispEl) dispEl.value = diffDays > 0 ? diffDays + ' day(s)' : 'Check dates';
+      if (diffDays > 0) {
+        return {
+          mode: 'continuous',
+          from: formatDate(from),
+          to: formatDate(to),
+          days: diffDays,
+          display: formatDate(from) + ' to ' + formatDate(to) + ' (' + diffDays + ' day' + (diffDays > 1 ? 's' : '') + ')'
+        };
+      }
+    }
+    const dispEl = document.getElementById('dateDurationDisplay');
+    if (dispEl) dispEl.value = '';
+    return null;
+  } else {
+    const dates = [];
+    document.querySelectorAll('[id^="spec-date-"]').forEach(inp => {
+      if (inp.value) dates.push(inp.value);
+    });
+    if (dates.length > 0) {
+      dates.sort();
+      const formatted = dates.map(d => formatDate(d));
+      return {
+        mode: 'specific',
+        dates: formatted,
+        days: dates.length,
+        display: formatted.join(', ') + ' (' + dates.length + ' day' + (dates.length > 1 ? 's' : '') + ')'
+      };
+    }
+    return null;
+  }
+}
+
+// ============================================================
+// WORKSHOP ITEMS
+// ============================================================
+let workshopItemCount = 0;
+const WORKSHOP_LABELS = {
+  '3dcad':      '3D CAD',
+  '3dprint':    '3D Printing',
+  'lasercut':   'Laser Cut',
+  'programming':'Programming',
+  'cardboard':  'Cardboard Sculpt',
+  'equipment':  'Usage of FabLab Equipment',
+  'custom':     'Custom Item'
+};
+
+function addWorkshopItem(type) {
+  // Grey out button (except custom which is always addable)
+  if (type !== 'custom') {
+    const btn = document.getElementById('wi-btn-' + type);
+    if (btn) btn.classList.add('used');
+  }
+  workshopItemCount++;
+  const id = workshopItemCount;
+  const label = WORKSHOP_LABELS[type] || 'Item';
+  const div = document.createElement('div');
+  div.className = 'workshop-item wi-row';
+  div.dataset.wid = id;
+  div.dataset.wtype = type;
+  // Custom item gets an editable label
+  const placeholders = {
+    '3dcad':       'e.g. Basic Fusion | Onshape | Shapr | Blender CAD',
+    '3dprint':     'e.g. Safety and operational procedure of 3D Printer which includes software operation',
+    'lasercut':    'e.g. Safety and operational procedure of Laser cutter which includes software operation',
+    'programming': 'e.g. Micropython, Vibe programming',
+    'cardboard':   'e.g. Cut and assembly of Cardboard',
+    'custom':      'Details covered...'
+  };
+  const ph = placeholders[type] || 'Details covered...';
+  const labelHtml = type === 'custom'
+    ? '<input type="text" id="wi-customlabel-' + id + '" placeholder="Item name..." oninput="calcTotal()" style="font-weight:700;color:#15803d;width:100%;">'
+    : '<div class="wi-label">' + label + '</div>';
+  const detailHtml = type === 'equipment'
+    ? '<div style="font-size:11px;color:#6b7280;font-style:italic;padding:2px 0;">Usage of FabLab Equipment</div>'
+    : '<input type="text" id="wi-detail-' + id + '" placeholder="' + ph + '" oninput="calcTotal()" style="width:100%;">';
+  div.innerHTML =
+    labelHtml +
+    detailHtml +
+    '<button class="btn btn-danger btn-sm" onclick="removeWorkshopItem(' + id + ', \'' + type + '\')">✕</button>';
+  document.getElementById('workshopItems').appendChild(div);
+  calcTotal();
+}
+
+function removeWorkshopItem(id, type) {
+  const el = document.querySelector('.workshop-item[data-wid="' + id + '"]');
+  if (el) el.remove();
+  // Re-enable button (except custom)
+  if (type && type !== 'custom') {
+    const btn = document.getElementById('wi-btn-' + type);
+    if (btn) btn.classList.remove('used');
+  }
+  calcTotal();
+}
+
+
+// ============================================================
+// BUILD QUOTE DOC HTML
+// ============================================================
+function buildQuoteDoc() {
+  calcTotal();
+  const d = window.__qd || {};
+  const companyName = document.getElementById('companyName').value || '';
+  const clientName = document.getElementById('clientName').value || '—';
+  const jobTitle = document.getElementById('jobTitle').value || '—';
+  const rawRef = document.getElementById('refNo').value || '';
+  const dateRaw = document.getElementById('quoteDate').value;
+  const dateStr = formatDate(dateRaw);
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const isInternal = type === 'internal';
+  const isExternal = type === 'external';
+  const isWorkshop = type === 'workshop';
+  const helpersOn = document.getElementById('toggleHelpers').checked;
+
+  const refNo = isWorkshop ? rawRef : ('SP-TTC/' + rawRef);
+  const docTitle = isInternal ? 'Internal Project Quotation' : (isWorkshop ? 'Workshop / Course Quotation' : 'Preliminary Quotation');
+
+  // ── Standard line items (internal / external) ──
+  let rows = '';
+  if (!isWorkshop) {
+    document.querySelectorAll('.line-item').forEach(item => {
+      const id = item.id.replace('li-','');
+      const desc = document.getElementById('li-desc-'+id)?.value || 'Item';
+      const qty = document.getElementById('li-qty-'+id)?.value || 1;
+      const hrs = document.getElementById('li-hrs-'+id)?.value || 0;
+      const machine = document.getElementById('li-machine-'+id)?.value || '';
+      const mLabel = { laser_cutter:'Laser Cutter', large_format:'Large Format Printer', '3d_printer':'3D Printer', cardboard_cutter:'Cardboard Cutter' }[machine] || '';
+      const r = calcMaterialCost(id);
+      const itemTotal = r.mat + r.machine;
+      rows += '<tr><td>' + desc + '<div class="qdoc-desc-detail">' + r.descDetail + (mLabel?' · '+mLabel:'') + (hrs>0?' · '+hrs+'hr×'+qty:'') + '</div></td>'
+        + '<td style="text-align:center">' + qty + '</td>'
+        + '<td class="r">$' + r.mat.toFixed(2) + '</td>'
+        + '<td class="r">$' + r.machine.toFixed(2) + '</td>'
+        + '<td class="r">$' + itemTotal.toFixed(2) + '</td></tr>';
+    });
+    document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
+      const id = el.id.replace('acc-desc-','');
+      const cost = parseFloat(document.getElementById('acc-cost-'+id)?.value||0);
+      if (el.value || cost > 0) {
+        const accQty = parseFloat(document.getElementById('acc-qty-'+id)?.value||1);
+        const accUnit = document.getElementById('acc-unit-'+id)?.value || 'pcs';
+        const accLineTotal = cost * accQty;
+        rows += '<tr><td>' + (el.value||'Accessory') + '<div class="qdoc-desc-detail">Accessory / Consumable</div></td>'
+          + '<td style="text-align:center">' + accQty + ' ' + accUnit + '</td><td class="r">$' + cost.toFixed(2) + '</td><td class="r">$0.00</td><td class="r">$' + accLineTotal.toFixed(2) + '</td></tr>';
+      }
+    });
+  }
+
+  // ── Workshop course items ──
+  let workshopRows = '';
+  if (isWorkshop) {
+    document.querySelectorAll('.workshop-item').forEach(wi => {
+      const wid = wi.dataset.wid;
+      const wtype = wi.dataset.wtype;
+      const label = wtype === 'custom'
+        ? (document.getElementById('wi-customlabel-'+wid)?.value || 'Custom Item')
+        : (WORKSHOP_LABELS[wtype] || 'Item');
+      const detailEl = document.getElementById('wi-detail-'+wid);
+      const detail = detailEl ? detailEl.value : (wtype === 'equipment' ? 'Usage of FabLab Equipment' : '');
+      workshopRows += '<tr><td style="padding:9px 10px;border-bottom:1px solid #f0f0f0;">'
+        + label
+        + (detail ? '<div class="qdoc-desc-detail">'+detail+'</div>' : '')
+        + '</td></tr>';
+    });
+    // Overall price row
+    const overallP = parseFloat(document.getElementById('overallCoursePrice')?.value || 0);
+    const overallNote = document.getElementById('overallCoursePriceNote')?.value || '';
+    if (overallP > 0) {
+      workshopRows += '<tr style="background:#f0fdf4;"><td style="padding:10px;font-weight:700;color:#15803d;border-top:2px solid #bbf7d0;">'
+        + 'Overall Course Fee'
+        + (overallNote ? '<div class="qdoc-desc-detail" style="color:#15803d;">' + overallNote + '</div>' : '')
+        + '</td></tr>';
+    }
+  }
+
+  // ── Extra fee rows (staff charges, project expenses) ──
+  const staffOn = document.getElementById('toggleStaff')?.checked;
+  const projExpOn = document.getElementById('toggleProjExp')?.checked;
+  let extraRows = '';
+  if (staffOn && d.staffCost > 0) {
+    const items = getStaffItems();
+    items.forEach(it => {
+      if (it.sub > 0 || it.role) {
+        const desc = it.role || 'Staff Charges';
+        const detail = '$' + it.rate.toFixed(2) + '/hr × ' + it.hrs + 'hrs × ' + it.count;
+        extraRows += '<tr><td>' + desc + '<div class="qdoc-desc-detail">' + detail + '</div></td>'
+          + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + it.sub.toFixed(2) + '</td></tr>';
+      }
+    });
+  }
+  if (projExpOn && d.projExpAmount > 0) {
+    const peItems = getProjExpItems();
+    peItems.forEach(it => {
+      if (it.amount > 0 || it.desc) {
+        extraRows += '<tr><td>' + (it.desc || 'Project Expense') + '</td>'
+          + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + it.amount.toFixed(2) + '</td></tr>';
+      }
+    });
+  }
+
+  const allRows = (isWorkshop ? workshopRows : rows) + extraRows;
+
+  // ── Totals block ──
+  const workshopChargesOnDoc = !isWorkshop || d.workshopChargesOn !== false;
+  // Combined SP+TIE overhead shown on client quote = grossed amount minus staff cost
+  const combinedSPTIE = (d.spCharge || 0) + (d.tieFee || 0);
+  const totalRowsArr = [
+    (d.helperCost > 0 && !isWorkshop) ? ['Student Helper/Agent' + (d.helperCount > 1 ? ' × ' + d.helperCount : ''), d.helperCost] : null,
+    (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work', d.expeditedFee] : null,
+    (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
+    // Show combined SP+TIE as a single "SP Charges" line on the client quote
+    ((isExternal || (isWorkshop && workshopChargesOnDoc)) && combinedSPTIE > 0) ? ['SP Charges', combinedSPTIE] : null,
+    // For external/workshop with charges: show Overall Project Fee (excl. GST)
+    (isExternal || (isWorkshop && workshopChargesOnDoc)) ? ['Overall Project Fee (Excluding GST)', d.costExclGST] : null,
+    // For workshop with charges off: just show subtotal
+    (isWorkshop && !workshopChargesOnDoc) ? ['Subtotal', d.subtotal] : null,
+    // Internal: show subtotal
+    isInternal ? ['Subtotal', d.subtotal] : null,
+    // GST always for external and workshop
+    ((isExternal || isWorkshop) && d.gst > 0) ? ['Prevailing GST:   ' + (d.rateGSTpct || 9) + '%', d.gst] : null,
+  ].filter(Boolean).map(([l,v]) => '<div class="qdoc-total-row"><span>'+l+'</span><span class="amt">$'+v.toFixed(2)+'</span></div>').join('');
+
+  // ── Vires block (internal only) ──
+  const viresBlock = isInternal ? '<div class="qdoc-vires"><div class="qdoc-vires-title">Internal Vires — Charging Details</div>'
+    + '<table class="qdoc-vires-table">'
+    + '<tr><td>Fund</td><td>SPO_DCG0001 SPO General Fund</td></tr>'
+    + '<tr><td>Cost Centre</td><td>AQR: SPO_CC0024</td></tr>'
+    + '<tr><td>Ledger Account</td><td>284100: Student-related Expenses</td></tr>'
+    + '<tr><td>Spend Category</td><td>284104SC Student Local Programmes and Activities</td></tr>'
+    + '<tr><td>Program ID</td><td>No Program ID for General Fund</td></tr>'
+    + '<tr><td>Memo</td><td>Nil</td></tr>'
+    + '</table></div>' : '';
+
+  const finePrint = (helpersOn && !isWorkshop) ? '<div class="qdoc-fineprint">* Workmanship based on total time × student rate ($11.00) [Student Agent involved]</div>' : '';
+
+  const footerNote = isInternal
+    ? 'Internal pricing — SP Surcharge and GST are not applicable for internal vires.'
+    : 'SP Charge Rate and GST (' + (d.rateGSTpct || 9) + '%) are applied to this quotation.';
+
+  const workshopDates = isWorkshop ? getWorkshopDateInfo() : null;
+  const refLine = isWorkshop
+    ? '<strong>Ref No:</strong> ' + (rawRef || '—') + '<br>'
+    : '<strong>Project Ref No:</strong> ' + refNo + '<br>';
+  const dateLine = (isWorkshop && workshopDates)
+    ? '<strong>Workshop Dates:</strong> ' + workshopDates.display + '<br>'
+    : '';
+
+  return '<div class="quote-doc">'
+    + '<div class="qdoc-header">'
+    +   '<div class="qdoc-logo-block">'
+    +     '<div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1;"><span style="color:#c0392b;">SP</span> FabLab</div>'
+    +     '<div class="qdoc-address">Department of Academic Quality &amp; Resources<br>Fablab<br>500 Dover Road, S139651</div>'
+    +   '</div>'
+    +   '<div class="qdoc-title-block">'
+    +     '<div class="qdoc-doc-title">' + docTitle + '</div>'
+    +     '<div class="qdoc-ref">'
+    +       refLine
+    +       dateLine
+    +       '<strong>Date:</strong> ' + dateStr + '<br>'
+    +       '<span class="qdoc-type-badge ' + type + '">' + (isWorkshop ? 'WORKSHOP / COURSE' : type.toUpperCase()) + '</span>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="qdoc-client">'
+    +   (companyName ? '<div class="qdoc-client-section"><h4>Company / Department</h4><p>' + companyName + '</p></div>' : '')
+    +   '<div class="qdoc-client-section"><h4>Client</h4><p>' + clientName + '</p></div>'
+    +   '<div class="qdoc-client-section"><h4>' + (isWorkshop ? 'Course / Programme' : 'Project Title') + '</h4><p>' + jobTitle + '</p></div>'
+    + '</div>'
+    + '<table class="qdoc-table"><thead><tr>'
+    +   (isWorkshop
+        ? '<th>Course Components Covered</th>'
+        : '<th>Description</th><th style="text-align:center">Qty</th><th class="r">Material</th><th class="r">Machine</th><th class="r">Item Total</th>')
+    + '</tr></thead>'
+    + '<tbody>' + (allRows || '<tr><td colspan="' + (isWorkshop ? '1' : '5') + '" style="text-align:center;color:#aaa;padding:16px;">No items added</td></tr>') + '</tbody>'
+    + '</table>'
+    + '<div class="qdoc-totals-wrap"><div class="qdoc-totals">'
+    +   totalRowsArr
+    +   '<div class="qdoc-total-row grand"><span>' + (isInternal ? 'TOTAL (SGD)' : 'Grand Total') + '</span><span class="amt">$' + (d.grand?.toFixed(2)||'0.00') + '</span></div>'
+    + '</div></div>'
+    + finePrint
+    + viresBlock
+    + '<div class="qdoc-footer">'
+    +   'This quotation is valid for 30 days from the date of issue. All amounts in Singapore Dollars (SGD).<br>'
+    +   footerNote + '<br>'
+    +   'SP FabLab · Department of Academic Quality &amp; Resources · 500 Dover Road, S139651'
+    + '</div>'
+    + '</div>';
+}
+
+// ============================================================
+// PREVIEW
+// ============================================================
+function showPreview() {
+  document.getElementById('quoteDocContent').innerHTML = buildQuoteDoc();
+  const _modal = document.getElementById('previewModal');
+  const _type  = document.querySelector('input[name="quoteType"]:checked')?.value || 'internal';
+  const _raw   = document.getElementById('refNo').value || '';
+  const _ref   = _type === 'workshop' ? _raw : ('SP-TTC/' + _raw);
+  const _cli   = document.getElementById('clientName').value || 'Unknown';
+  _modal.dataset.printTitle = makeFilename('', _ref, _cli);
+  _modal.classList.add('show');
+}
+function closePreview() { document.getElementById('previewModal').classList.remove('show'); }
+function closePreviewOnBg(e) { if (e.target.id === 'previewModal') closePreview(); }
+
+// ============================================================
+// FILENAME HELPER
+// ============================================================
+function makeFilename(prefix, refNo, client) {
+  // Sanitise: remove special chars, replace spaces with underscores
+  const safeRef = refNo.replace('SP-TTC/', 'SP-TTC-').replace(/[^a-zA-Z0-9\-_]/g, '');
+  const safeClient = (client || 'Unknown').replace(/[^a-zA-Z0-9\s\-]/g, '').trim().replace(/\s+/g, '_');
+  return (prefix ? prefix + '_' : '') + safeRef + '_' + safeClient;
+}
+
+
+// ============================================================
+// PRINT
+// ============================================================
+function printWithTitle(content, title, isFullDoc) {
+  const quoteCss = [
+    '*{box-sizing:border-box;margin:0;padding:0}',
+    "body{font-family:'Nunito','Segoe UI',Arial,sans-serif;background:#fff;color:#1a1d23;font-size:13px;}",
+    '.quote-doc{padding:36px 44px;}',
+    '.qdoc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid #1a1d23;}',
+    '.qdoc-address{font-size:11px;color:#555;margin-top:6px;line-height:1.7;}',
+    '.qdoc-doc-title{font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;}',
+    '.qdoc-title-block{text-align:right;}',
+    '.qdoc-ref{font-size:11px;color:#666;margin-top:6px;line-height:1.8;}',
+    '.qdoc-ref strong{color:#1a1d23;font-weight:700;}',
+    '.qdoc-type-badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}',
+    '.qdoc-type-badge.internal{background:#dbeafe;color:#1d4ed8;}',
+    '.qdoc-type-badge.external{background:#fef3c7;color:#b45309;}',
+    '.qdoc-client{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;padding:12px 14px;background:#f8f9fa;border-radius:6px;border:1px solid #e5e7eb;}',
+    '.qdoc-client-section h4{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-bottom:4px;}',
+    '.qdoc-client-section p{font-size:13px;font-weight:700;}',
+    '.qdoc-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:18px;}',
+    '.qdoc-table th{background:#1a1d23;color:#fff;padding:8px 10px;text-align:left;font-size:9px;letter-spacing:1px;text-transform:uppercase;}',
+    '.qdoc-table th.r{text-align:right;}',
+    '.qdoc-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top;}',
+    '.qdoc-table td.r{text-align:right;font-weight:600;}',
+    '.qdoc-table tr:nth-child(even) td{background:#fafafa;}',
+    '.qdoc-desc-detail{font-size:9px;color:#888;margin-top:1px;}',
+    '.qdoc-totals-wrap{display:flex;justify-content:flex-end;}',
+    '.qdoc-totals{width:260px;font-size:11px;}',
+    '.qdoc-total-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #eee;}',
+    '.qdoc-total-row.grand{background:#1a1d23;color:#fff;padding:9px 11px;border-radius:5px;margin-top:6px;font-weight:800;font-size:13px;border:none;}',
+    '.amt{font-weight:700;}',
+    '.qdoc-vires{margin-top:20px;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;}',
+    '.qdoc-vires-title{background:#1a1d23;color:#fff;padding:7px 12px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}',
+    '.qdoc-vires-table{width:100%;border-collapse:collapse;font-size:10px;}',
+    '.qdoc-vires-table td{padding:6px 12px;border-bottom:1px solid #f0f0f0;}',
+    '.qdoc-vires-table td:first-child{font-weight:700;color:#555;width:160px;background:#f8f9fa;}',
+    '.qdoc-vires-table tr:last-child td{border-bottom:none;}',
+    '.qdoc-fineprint{margin-top:14px;padding:8px 12px;background:#fffbeb;border:1px solid #fcd34d;border-radius:5px;font-size:9px;color:#78350f;}',
+    '.qdoc-footer{margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;text-align:center;line-height:1.6;}'
+  ].join('');
+
+  let finalHTML;
+  if (isFullDoc) {
+    // DO passes a complete HTML doc — just inject the title
+    finalHTML = content.replace('<title>Delivery Order', '<title>' + title);
+  } else {
+    finalHTML = '<!DOCTYPE html><html><head>'
+      + '<meta charset="UTF-8">'
+      + '<title>' + title + '</title>'
+      + '<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">'
+      + '<style>' + quoteCss + '</style>'
+      + '</head><body>' + content + '</body></html>';
+  }
+
+  const blob = new Blob([finalHTML], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (win) {
+    win.addEventListener('load', function() {
+      setTimeout(function() { win.print(); }, 600);
+      setTimeout(function() { URL.revokeObjectURL(url); }, 15000);
+    });
+  } else {
+    notify('Please allow pop-ups to open the print dialog.');
+  }
+}
+
+function saveFromPreview() {
+  saveQuote();
+  closePreview();
+}
+
+function printDocOnly() {
+  // Open in new tab and trigger browser print dialog (Ctrl+P style)
+  const content = document.getElementById('quoteDocContent').innerHTML;
+  const modal = document.getElementById('previewModal');
+  const title = modal.dataset.printTitle || 'SP-FabLab-Quote';
+  printWithTitle(content, title, false);
+}
+
+function saveDocAsPDF() {
+  // Same as printDocOnly for now — browser will offer "Save as PDF" in the dialog
+  printDocOnly();
+}
+
+// Legacy alias
+function printDoc() { printDocOnly(); }
+
+// ============================================================
+// SAVE & PRINT
+// ============================================================
+function collectFormState() {
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const state = {
+    type,
+    companyName: document.getElementById('companyName')?.value || '',
+    clientName:  document.getElementById('clientName').value,
+    jobTitle:    document.getElementById('jobTitle').value,
+    refNo:       document.getElementById('refNo').value,
+    date:        document.getElementById('quoteDate').value,
+    // Extras toggles & values
+    designOn:      document.getElementById('toggleDesign').checked,
+    designMode:    document.getElementById('designMode')?.value,
+    designValue:   document.getElementById('designValue')?.value,
+    expeditedOn:   document.getElementById('toggleExpedited').checked,
+    expeditedPct:       document.getElementById('expeditedPct')?.value,
+    expeditedOnProjExp: document.getElementById('expeditedOnProjExp')?.checked,
+    helpersOn:     document.getElementById('toggleHelpers').checked,
+    helperCount:   document.getElementById('helperCount')?.value,
+    helperHours:   document.getElementById('helperHours')?.value,
+    staffOn:       document.getElementById('toggleStaff')?.checked,
+    staffItems:    getStaffItems(),
+    projExpOn:     document.getElementById('toggleProjExp')?.checked,
+    projExpItems:  getProjExpItems(),
+    rateSP:    document.getElementById('rateSP')?.value,
+    rateTIE:   document.getElementById('rateTIE')?.value,
+    rateGST:   document.getElementById('rateGST')?.value,
+    workshopChargesEnabled: document.getElementById('workshopChargesEnabled')?.checked,
+    forceSpTie:             document.getElementById('forceSpTie')?.checked,
+    rateEditUnlocked: document.getElementById('rateSP')?.readOnly === false && document.querySelector('input[name="quoteType"]:checked')?.value === 'external',
+    // Workshop
+    overallCoursePrice: document.getElementById('overallCoursePrice')?.value,
+    overallCoursePriceNote: document.getElementById('overallCoursePriceNote')?.value,
+    dateMode: typeof currentDateMode !== 'undefined' ? currentDateMode : 'continuous',
+    dateFrom: document.getElementById('dateFrom')?.value,
+    dateTo:   document.getElementById('dateTo')?.value,
+    lineItems: [],
+    accessories: [],
+    workshopItems: []
+  };
+
+  // Specific dates
+  const specDates = [];
+  document.querySelectorAll('[id^="spec-date-"]').forEach(inp => {
+    if (inp.value) specDates.push(inp.value);
+  });
+  state.specificDates = specDates;
+
+  // Line items
+  document.querySelectorAll('.line-item').forEach(li => {
+    const id = li.id.replace('li-','');
+    const matType = document.getElementById('li-type-'+id)?.value || '';
+    const item = {
+      desc:    document.getElementById('li-desc-'+id)?.value || '',
+      type:    matType,
+      hrs:     document.getElementById('li-hrs-'+id)?.value || '0',
+      hrsunit: document.getElementById('li-hrsunit-'+id)?.value || 'hrs',
+      qty:     document.getElementById('li-qty-'+id)?.value || '1',
+      machine: document.getElementById('li-machine-'+id)?.value || '',
+      size:    document.getElementById('li-size-'+id)?.value,
+      thick:   document.getElementById('li-thick-'+id)?.value,
+      tier:    document.getElementById('li-tier-'+id)?.value,
+      filament:   document.getElementById('li-filament-'+id)?.value,
+      grams:     document.getElementById('li-grams-'+id)?.value,
+      colourMode:document.getElementById('li-colourmode-'+id)?.value,
+      gypsumShape: document.getElementById('li-gypsum-shape-'+id)?.value,
+      gypsumPrice: document.getElementById('li-gypsum-price-'+id)?.value,
+    };
+    state.lineItems.push(item);
+  });
+
+  // Accessories
+  document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
+    const id = el.id.replace('acc-desc-','');
+    state.accessories.push({
+      desc: el.value,
+      qty:  document.getElementById('acc-qty-'+id)?.value  || '1',
+      unit: document.getElementById('acc-unit-'+id)?.value || 'pcs',
+      cost: document.getElementById('acc-cost-'+id)?.value || '0'
+    });
+  });
+
+  // Workshop items
+  document.querySelectorAll('.workshop-item').forEach(wi => {
+    const wid = wi.dataset.wid;
+    const wtype = wi.dataset.wtype;
+    state.workshopItems.push({
+      wtype,
+      customLabel: document.getElementById('wi-customlabel-'+wid)?.value || '',
+      detail: document.getElementById('wi-detail-'+wid)?.value || ''
+    });
+  });
+
+  return state;
+}
+
+function collectItems() {
+  const items = [];
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  if (type !== 'workshop') {
+    document.querySelectorAll('.line-item').forEach(li => {
+      const id = li.id.replace('li-','');
+      const desc = document.getElementById('li-desc-'+id)?.value || '';
+      const qty = document.getElementById('li-qty-'+id)?.value || '1';
+      const r = calcMaterialCost(id);
+      if (desc || r.mat > 0) items.push({ desc: desc || 'Item', qty, detail: r.descDetail });
+    });
+    document.querySelectorAll('[id^="acc-desc-"]').forEach(el => {
+      const id = el.id.replace('acc-desc-','');
+      const cost = parseFloat(document.getElementById('acc-cost-'+id)?.value||0);
+      if (el.value || cost > 0) items.push({ desc: el.value || 'Accessory', qty: '1', detail: 'Accessory / Consumable' });
+    });
+  } else {
+    document.querySelectorAll('.workshop-item').forEach(wi => {
+      const wid = wi.dataset.wid;
+      const wtype = wi.dataset.wtype;
+      const label = wtype === 'custom'
+        ? (document.getElementById('wi-customlabel-'+wid)?.value || 'Custom Item')
+        : (WORKSHOP_LABELS[wtype] || 'Item');
+      const detailEl2 = document.getElementById('wi-detail-'+wid);
+      const detail = detailEl2 ? detailEl2.value : (wtype === 'equipment' ? 'Usage of FabLab Equipment' : '');
+      items.push({ desc: label, qty: '1', detail });
+    });
+    // Overall course price as a DO item
+    const overallP2 = parseFloat(document.getElementById('overallCoursePrice')?.value || 0);
+    if (overallP2 > 0) {
+      const overallNote2 = document.getElementById('overallCoursePriceNote')?.value || '';
+      items.push({ desc: 'Overall Course Fee', qty: '1', detail: overallNote2 });
+    }
+  }
+  // Staff charges
+  if (document.getElementById('toggleStaff')?.checked) {
+    const rate = '—'; const hrs = '—'; const cnt = '—'; const leave = '';
+    items.push({ desc: 'Staff Charges', qty: '1', detail: '$'+rate+'/hr × '+hrs+'hrs × '+cnt+' staff'+leave });
+  }
+  // Project expenses
+  if (document.getElementById('toggleProjExp')?.checked) {
+    const expDesc = 'Project Expenses';
+    items.push({ desc: expDesc, qty: '1', detail: 'Project Expenses' });
+  }
+  return items;
+}
+
+async function saveQuote() {
+  calcTotal();
+  const d = window.__qd || {};
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const client = document.getElementById('clientName').value || 'Unknown';
+  const rawRef = document.getElementById('refNo').value || '';
+  const refNo = type === 'workshop' ? rawRef : ('SP-TTC/' + rawRef);
+  const snapshot = buildQuoteDoc();
+
+  // If editing, overwrite existing entry
+  if (editingEntryId) {
+    try {
+      const orig = await getEntryById(editingEntryId);
+      if (orig) {
+        const entry = {
+          id: orig.id,
+          type,
+          client,
+          jobTitle: document.getElementById('jobTitle').value || '—',
+          refNo,
+          date: document.getElementById('quoteDate').value,
+          total: d.grand || 0,
+          helperCount: d.helperCount || 0,
+          items: collectItems(),
+          formState: collectFormState(),
+          snapshot,
+          saved: orig.saved,
+          savedEdited: new Date().toISOString()
+        };
+        // SP saveToLog handles upsert by QuoteID
+        editingEntryId = null;
+        const banner = document.getElementById('editingBanner');
+        if (banner) banner.style.display = 'none';
+        updateSaveBtnLabels(false);
+        notify('Quote updated ✓');
+        return;
+      }
+    } catch(e) {}
+  }
+
+  const entry = {
+    id: Date.now(),
+    type,
+    client,
+    jobTitle: document.getElementById('jobTitle').value || '—',
+    refNo,
+    date: document.getElementById('quoteDate').value,
+    total: d.grand || 0,
+    helperCount: d.helperCount || 0,
+    items: collectItems(),
+    formState: collectFormState(),
+    snapshot,
+    saved: new Date().toISOString()
+  };
+  saveToLog(entry);
+  notify('Quote saved ✓  —  click Print to save as PDF.');
+}
+
+function printCurrent() {
+  calcTotal();
+  const type = document.querySelector('input[name="quoteType"]:checked').value;
+  const client = document.getElementById('clientName').value || 'Unknown';
+  const rawRef = document.getElementById('refNo').value || '';
+  const refNo = type === 'workshop' ? rawRef : ('SP-TTC/' + rawRef);
+  const snapshot = buildQuoteDoc();
+  const filename = makeFilename('', refNo, client);
+  printWithTitle(snapshot, filename, false);
+}
+
+// Legacy alias kept for any inline references
+function saveAndPrint() { saveQuote(); }
+
+// ============================================================
+// STORAGE / LOG
+// ============================================================
+// ============================================================
+// SHAREPOINT STORAGE LAYER
+// Replaces localStorage with SharePoint List REST API.
+// The list "FabLabQuotes" must exist on the same site.
+// ============================================================
+
+// ============================================================
+// POWER AUTOMATE FLOW URLS — replace SharePoint direct calls
+// ============================================================
+const PA_FLOWS = {
+  saveQuote:   'https://default7604ff02abd845db8cac550054323f.c9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a7bc9b4efb734c47b89720b218d0f27e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Jd0an6h70igTpXEPzyV1P7fma1AzWvHpnsIKNSWNsSs',
+  getQuotes:   'https://default7604ff02abd845db8cac550054323f.c9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/68c3c56a7bea49ef8da6d1da91f30afb/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=P5k8834msk3_hktxWSgIKaPfcydE_mDC8CRtLQVWoCk',
+  deleteQuote: 'https://default7604ff02abd845db8cac550054323f.c9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2a6f776b53f4414989eae18e5a07d65e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=fNAIR1errRqtK3dgwLog5jyLaDgYzQcI68jIJNo63nE'
+};
+
+// getSPContext kept for compatibility but no longer used for list operations
+function getSPContext() { return { siteUrl: '' }; }
+
+async function getSPDigest(siteUrl) {
+  // Refresh the form digest (required for write operations outside of SP page context)
+  try {
+    const r = await fetch(siteUrl + '/_api/contextinfo', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json;odata=nometadata', 'Content-Type': 'application/json' },
+      credentials: 'include'
+    });
+    const d = await r.json();
+    return d.FormDigestValue || '';
+  } catch(e) { return ''; }
+}
+
+async function spRequest(method, url, body, digest) {
+  const headers = {
+    'Accept': 'application/json;odata=nometadata',
+    'Content-Type': 'application/json;odata=nometadata',
+    'X-RequestDigest': digest || ''
+  };
+  if (method === 'DELETE' || method === 'PATCH') {
+    headers['X-HTTP-Method'] = method;
+    headers['IF-MATCH'] = '*';
+  }
+  const opts = {
+    method: method === 'PATCH' ? 'POST' : method,
+    headers,
+    credentials: 'include'
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (!r.ok) {
+    const err = await r.text();
+    throw new Error('SP Error ' + r.status + ': ' + err);
+  }
+  if (r.status === 204) return {}; // No content (DELETE/PATCH success)
+  return r.json();
+}
+
+const SP_LIST = 'FabLabQuotes';
+
+async function saveToLog(entry) {
+  if (!PA_FLOWS.saveQuote) { notify('⚠️ Save flow URL not configured.'); return; }
+  try {
+    const payload = {
+      quoteId:     String(entry.id),
+      title:       entry.refNo || String(entry.id),
+      quoteType:   entry.type || '',
+      clientName:  entry.client || '',
+      jobTitle:    entry.jobTitle || '',
+      quoteDate:   entry.date || new Date().toISOString().split('T')[0],
+      total:       parseFloat(entry.total) || 0,
+      helperCount: parseInt(entry.helperCount) || 0,
+      quoteData:   JSON.stringify(entry)
+    };
+    const r = await fetch(PA_FLOWS.saveQuote, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+  } catch(e) {
+    console.error('saveToLog error:', e);
+    notify('⚠️ Could not save to log: ' + e.message);
+  }
+}
+
+async function getLog() {
+  if (!PA_FLOWS.getQuotes) return [];
+  try {
+    const r = await fetch(PA_FLOWS.getQuotes, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const items = await r.json();
+    const entries = [];
+    (Array.isArray(items) ? items : []).forEach(item => {
+      try { if (item.QuoteData) entries.push(JSON.parse(item.QuoteData)); } catch(e) {}
+    });
+    return entries;
+  } catch(e) {
+    console.error('getLog error:', e);
+    return [];
+  }
+}
+
+async function getEntryById(id) {
+  try {
+    const entries = await getLog();
+    return entries.find(e => String(e.id) === String(id)) || null;
+  } catch(e) { console.error('getEntryById error:', e); return null; }
+}
+
+async function renderLog() {
+  const container = document.getElementById('logList');
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">⏳ Loading from SharePoint...</div>';
+  const entries = await getLog();
+  const filtered = currentLogFilter === 'all' ? entries : entries.filter(e => e.type === currentLogFilter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="log-empty">
+      <div style="font-size:32px;margin-bottom:8px;">📁</div>
+      <div style="font-weight:700;">No ${currentLogFilter === 'all' ? '' : currentLogFilter + ' '}quotes saved yet.</div>
+      <div style="margin-top:4px;">Build a quote and click "Save & Print" to log it here.</div>
+    </div>`;
+    renderFYSummary(entries);
+    return;
+  }
+
+  container.innerHTML = filtered.map(e => `
+    <div class="log-item">
+      <div class="log-item-header">
+        <div>
+          <div class="log-item-title">${e.client} — ${e.jobTitle}</div>
+          <div class="log-item-meta">${e.refNo} · ${formatDate(e.date)} · <span class="badge badge-${e.type}">${e.type === 'workshop' ? 'Workshop' : e.type.charAt(0).toUpperCase()+e.type.slice(1)}</span></div>
+          <div class="log-item-meta" style="margin-top:2px;">Saved: ${new Date(e.saved).toLocaleString()}${e.savedEdited ? ' · <span style="color:#f59e0b;font-weight:700;">Edited: '+new Date(e.savedEdited).toLocaleString()+'</span>' : ''}</div>
+        </div>
+        <div class="log-item-total">$${e.total.toFixed(2)}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="restoreAndPreview(${e.id})" style="flex:1;min-width:90px;">⎙ View</button>
+        <button class="btn btn-blue btn-sm" onclick="generateDO(${e.id})" style="flex:1;min-width:140px;">📦 Generate Delivery Order</button>
+        <button class="btn btn-sm" onclick="duplicateEntry(${e.id})" style="flex:1;min-width:90px;background:#f0fdf4;border:1px solid #86efac;color:#15803d;font-weight:700;">⧉ Duplicate</button>
+        <button class="btn btn-sm" onclick="editEntry(${e.id})" style="flex:1;min-width:90px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-weight:700;">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})" title="Delete">🗑</button>
+      </div>
+    </div>`).join('');
+
+  // Always render FY summary with ALL entries (not filtered)
+  renderFYSummary(entries);
+}
+
+async function restoreAndPreview(id) {
+  try {
+    const entry = await getEntryById(id);
+    if (!entry) { notify('Could not load quote.'); return; }
+    document.getElementById('quoteDocContent').innerHTML = entry.snapshot;
+    const modal = document.getElementById('previewModal');
+    const ref   = entry.refNo || '';
+    modal.dataset.printTitle = makeFilename('', ref, entry.client || 'Unknown');
+    modal.classList.add('show');
+  } catch(e) { notify('Could not load quote.'); }
+}
+
+function deleteLogEntry(id) {
+  // Find the log item and show inline confirm to avoid browser blocking confirm()
+  const allBtns = document.querySelectorAll('[onclick^="deleteLogEntry"]');
+  let targetRow = null;
+  allBtns.forEach(btn => {
+    if (btn.getAttribute('onclick') === `deleteLogEntry(${id})`) targetRow = btn.closest('.log-item');
+  });
+  if (targetRow) {
+    // Check if already showing confirm
+    if (targetRow.querySelector('.delete-confirm-row')) {
+      // Second click — already shown, do nothing
+      return;
+    }
+    const confirmDiv = document.createElement('div');
+    confirmDiv.className = 'delete-confirm-row';
+    confirmDiv.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;font-size:12px;color:#991b1b;';
+    confirmDiv.innerHTML = `<span style="flex:1;">⚠️ Delete this quote permanently?</span>
+      <button class="btn btn-danger btn-sm" onclick="confirmDeleteLogEntry(${id})">Yes, delete</button>
+      <button class="btn btn-ghost btn-sm" style="border-color:#fca5a5;color:#991b1b;" onclick="cancelDeleteLogEntry(${id})">Cancel</button>`;
+    targetRow.appendChild(confirmDiv);
+  } else {
+    // Fallback if row not found
+    if (!window.confirm('Delete this saved quote? This cannot be undone.')) return;
+    confirmDeleteLogEntry(id);
+  }
+}
+
+async function confirmDeleteLogEntry(id) {
+  if (!PA_FLOWS.deleteQuote) { notify('⚠️ Delete flow URL not configured yet.'); return; }
+  try {
+    const r = await fetch(PA_FLOWS.deleteQuote, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quoteId: String(id) })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+  } catch(e) { notify('⚠️ Delete failed: ' + e.message); return; }
+  renderLog();
+  notify('Quote deleted.');
+}
+
+function cancelDeleteLogEntry(id) {
+  const allBtns = document.querySelectorAll('[onclick^="deleteLogEntry"]');
+  allBtns.forEach(btn => {
+    if (btn.getAttribute('onclick') === `deleteLogEntry(${id})`) {
+      const row = btn.closest('.log-item')?.querySelector('.delete-confirm-row');
+      if (row) row.remove();
+    }
+  });
+}
+
+async function generateDO(id) {
+  try {
+    const entry = await getEntryById(id);
+    if (!entry) { notify('Quote not found.'); return; }
+
+    // Use stored items array; fall back gracefully for older entries
+    let doItems = (entry.items && entry.items.length) ? entry.items : [];
+    if (!doItems.length && entry.snapshot) {
+      try {
+        const parser = new DOMParser();
+        const sdoc = parser.parseFromString(entry.snapshot, 'text/html');
+        sdoc.querySelectorAll('.qdoc-table tbody tr').forEach(function(row) {
+          const cells = row.querySelectorAll('td');
+          if (!cells.length) return;
+          const mainDesc = (cells[0].childNodes[0] && cells[0].childNodes[0].textContent) ? cells[0].childNodes[0].textContent.trim() : '';
+          const detailEl = cells[0].querySelector('.qdoc-desc-detail');
+          const detail = detailEl ? detailEl.textContent.trim() : '';
+          const qty = cells[1] ? cells[1].textContent.trim() : '1';
+          if (mainDesc) doItems.push({ desc: mainDesc, qty: qty, detail: detail });
+        });
+      } catch(pe) { console.warn('Snapshot parse fallback failed', pe); }
+    }
+
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+    const doDate = String(now.getDate()).padStart(2,'0') + '-' + months[now.getMonth()] + '-' + now.getFullYear();
+    const doNum = 'DO-' + entry.refNo.replace('SP-TTC/','') + '-' + String(now.getTime()).slice(-4);
+
+    let itemNum = 1;
+    let itemRowsHtml = '';
+    if (doItems.length === 0) {
+      itemRowsHtml = '<tr><td colspan="4" style="padding:20px;text-align:center;color:#aaa;">No items recorded</td></tr>';
+    } else {
+      doItems.forEach(function(item) {
+        const detailHtml = item.detail ? '<div style="font-size:10px;color:#999;margin-top:2px;">' + item.detail + '</div>' : '';
+        itemRowsHtml += '<tr>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid #eee;text-align:center;color:#888;">' + (itemNum++) + '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid #eee;">' + item.desc + detailHtml + '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid #eee;text-align:center;font-weight:700;">' + item.qty + '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid #eee;"></td>' +
+          '</tr>';
+      });
+    }
+
+    const doHtmlParts = [
+      '<!DOCTYPE html><html><head>',
+      '<meta charset="UTF-8">',
+      '<title>Delivery Order - ' + doNum + '</title>',
+      '<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">',
+      '<style>',
+      '*{box-sizing:border-box;margin:0;padding:0;}',
+      'body{font-family:"Nunito","Segoe UI",Arial,sans-serif;background:#fff;color:#1a1d23;font-size:13px;padding:44px 52px;}',
+      '.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2.5px solid #1a1d23;}',
+      '.brand{font-size:24px;font-weight:800;letter-spacing:-0.5px;}',
+      '.brand span{color:#c0392b;}',
+      '.addr{font-size:11px;color:#555;margin-top:5px;line-height:1.75;}',
+      '.doc-title{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:right;}',
+      '.doc-meta{text-align:right;font-size:11px;color:#555;margin-top:8px;line-height:2.1;}',
+      '.doc-meta b{color:#1a1d23;font-size:12px;}',
+      '.client-block{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px;padding:14px 16px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:6px;}',
+      '.client-block h4{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-bottom:5px;}',
+      '.client-block p{font-size:14px;font-weight:700;}',
+      '.notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:5px;padding:10px 14px;font-size:11px;color:#78350f;margin-bottom:18px;line-height:1.5;}',
+      'table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:32px;}',
+      'thead tr{background:#1a1d23;}',
+      'th{color:#fff;padding:10px;text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;}',
+      'td{vertical-align:top;}',
+      '.sig-wrap{border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;}',
+      '.sig-hdr{background:#1a1d23;color:#fff;padding:9px 16px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}',
+      '.sig-body{padding:20px 16px;}',
+      '.sig-stmt{font-size:12px;color:#444;line-height:1.6;margin-bottom:40px;}',
+      '.sig-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;}',
+      '.sig-field{border-top:1.5px solid #1a1d23;padding-top:8px;}',
+      '.sig-field-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;margin-top:6px;}',
+      '.footer{margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;font-size:9px;color:#aaa;text-align:center;line-height:1.7;}',
+      '@media print{body{padding:28px 36px;}}',
+      '</style></head><body>',
+      '<div class="hdr">',
+      '  <div>',
+      '    <div class="brand"><span>SP</span> FabLab</div>',
+      '    <div class="addr">Department of Academic Quality &amp; Resources<br>Fablab &middot; 500 Dover Road, S139651</div>',
+      '  </div>',
+      '  <div>',
+      '    <div class="doc-title">Delivery Order</div>',
+      '    <div class="doc-meta">',
+      '      <b>DO No:</b> ' + doNum + '<br>',
+      '      <b>Quote Ref:</b> ' + entry.refNo + '<br>',
+      '      <b>Date:</b> ' + doDate,
+      '    </div>',
+      '  </div>',
+      '</div>',
+      '<div class="client-block">',
+      '  <div><h4>Deliver To</h4><p>' + entry.client + '</p></div>',
+      '  <div><h4>Project Title</h4><p>' + entry.jobTitle + '</p></div>',
+      '</div>',
+      '<div class="notice">&#9888; Please inspect all items carefully upon collection. Report any discrepancies or damage to FabLab staff <b>before signing</b> this Delivery Order.</div>',
+      '<table>',
+      '  <thead><tr>',
+      '    <th style="width:36px;text-align:center;">#</th>',
+      '    <th>Item Description</th>',
+      '    <th style="width:60px;text-align:center;">Qty</th>',
+      '    <th style="width:110px;text-align:center;">Condition Checked</th>',
+      '  </tr></thead>',
+      '  <tbody>' + itemRowsHtml + '</tbody>',
+      '</table>',
+      '<div class="sig-wrap">',
+      '  <div class="sig-hdr">Acknowledgement of Receipt</div>',
+      '  <div class="sig-body">',
+      '    <div class="sig-stmt">I, the undersigned, confirm that I have received all items listed in this Delivery Order in good order and condition, unless otherwise stated.</div>',
+      '    <div class="sig-fields">',
+      '      <div class="sig-field"><div style="height:50px;"></div><div class="sig-field-lbl">Full Name</div></div>',
+      '      <div class="sig-field"><div style="height:50px;"></div><div class="sig-field-lbl">Signature</div></div>',
+      '      <div class="sig-field"><div style="height:50px;"></div><div class="sig-field-lbl">Date Received</div></div>',
+      '    </div>',
+      '  </div>',
+      '</div>',
+      '<div class="footer">',
+      '  SP FabLab &middot; Department of Academic Quality &amp; Resources &middot; 500 Dover Road, S139651<br>',
+      '  DO No: ' + doNum + ' &middot; Quote Ref: ' + entry.refNo + ' &middot; Printed: ' + doDate,
+      '</div>',
+      '<scr' + 'ipt>/* print triggered by opener */</' + 'script>',
+      '</body></html>'
+    ];
+
+    const doHTML = doHtmlParts.join('\n');
+    const doFilename = makeFilename('DO', entry.refNo, entry.client);
+    printWithTitle(doHTML, doFilename, true);
+    notify('DO ready  —  save as PDF: "' + doFilename + '"');
+  } catch(e) {
+    notify('Could not generate Delivery Order.');
+    console.error('generateDO error:', e);
+  }
+}
+
+
+function toggleSidebar() {
+  const inner = document.getElementById('mainSidebar');
+  const btn = document.getElementById('sidebarToggleBtn');
+  const isCollapsed = inner.classList.toggle('sidebar-collapsed');
+  btn.textContent = isCollapsed ? '▼' : '▲';
+  btn.title = isCollapsed ? 'Expand summary' : 'Collapse summary';
+}
+
+function checkSidebarToggleVisibility() {
+  const btn = document.getElementById('sidebarToggleBtn');
+  if (!btn) return;
+  btn.style.display = window.innerWidth <= 900 ? 'block' : 'none';
+}
+window.addEventListener('resize', checkSidebarToggleVisibility);
+document.addEventListener('DOMContentLoaded', checkSidebarToggleVisibility);
+
+async function clearLog() {
+  if (!confirm('Clear ALL saved quotes? This cannot be undone.')) return;
+  try {
+    const entries = await getLog();
+    await Promise.all(entries.map(e =>
+      fetch(PA_FLOWS.deleteQuote, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId: String(e.id) })
+      })
+    ));
+    notify('Log cleared.');
+    renderLog();
+  } catch(e) { notify('Error clearing log: ' + e.message); }
+}
+
+function filterLog(type, el) {
+  currentLogFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderLog();
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function restoreFormState(state) {
+  // Clear existing
+  document.getElementById('lineItems').innerHTML = '';
+  document.getElementById('accessories').innerHTML = '';
+  document.getElementById('workshopItems').innerHTML = '';
+  lineItemCount = 0; accessoryCount = 0; workshopItemCount = 0;
+
+  // Reset all workshop buttons
+  document.querySelectorAll('.wi-btn').forEach(b => b.classList.remove('used'));
+
+  // Quote type
+  const radio = document.querySelector('input[name="quoteType"][value="' + state.type + '"]');
+  if (radio) { radio.checked = true; updateQuoteType(); }
+
+  // Basic fields
+  const companyEl2 = document.getElementById('companyName');
+  if (companyEl2) companyEl2.value = state.companyName || '';
+  document.getElementById('clientName').value = state.clientName || '';
+  document.getElementById('jobTitle').value   = state.jobTitle || '';
+  document.getElementById('refNo').value       = state.refNo || '';
+  document.getElementById('quoteDate').value   = state.date || '';
+
+  // Toggles & extras
+  function setToggle(id, val, fieldId) {
+    const el = document.getElementById(id);
+    if (el) { el.checked = !!val; if (fieldId) { const f = document.getElementById(fieldId); if(f) { if(val) f.classList.add('show'); else f.classList.remove('show'); } } }
+  }
+  setToggle('toggleDesign',    state.designOn,    'designFields');
+  if (state.designMode)  { const dm = document.getElementById('designMode');  if(dm) dm.value = state.designMode; }
+  if (state.designValue) { const dv = document.getElementById('designValue'); if(dv) dv.value = state.designValue; }
+
+  setToggle('toggleExpedited', state.expeditedOn,  'expeditedFields');
+  if (state.expeditedPct) { const ep = document.getElementById('expeditedPct'); if(ep) ep.value = state.expeditedPct; }
+  const eope = document.getElementById('expeditedOnProjExp'); if (eope) eope.checked = !!state.expeditedOnProjExp;
+
+  setToggle('toggleHelpers',   state.helpersOn,   'helperFields');
+  if (state.helperCount) { const hc = document.getElementById('helperCount'); if(hc) hc.value = state.helperCount; }
+  if (state.helperHours) { const hh = document.getElementById('helperHours'); if(hh) hh.value = state.helperHours; }
+
+  setToggle('toggleStaff', state.staffOn, 'staffFields');
+  document.getElementById('staffItems').innerHTML = '';
+  staffItemCount = 0;
+  if (state.staffItems && state.staffItems.length) {
+    state.staffItems.forEach(it => addStaffItem(it.role, it.rate, it.hrs, it.count));
+  } else if (state.staffOn) {
+    // Legacy single-item restore
+    addStaffItem('', state.staffRate || 0, state.staffHours || 0, state.staffCount || 1);
+  }
+
+  setToggle('toggleProjExp', state.projExpOn, 'projExpFields');
+  document.getElementById('projExpItems').innerHTML = '';
+  projExpItemCount = 0;
+  if (state.projExpItems && state.projExpItems.length) {
+    state.projExpItems.forEach(it => addProjExpItem(it.desc, it.amount));
+  } else if (state.projExpOn) {
+    // Legacy restore — single amount/desc
+    addProjExpItem(state.projExpDesc || '', state.projExpAmount || 0);
+  }
+
+  if (state.rateSP)  { const el = document.getElementById('rateSP');  if(el) el.value = state.rateSP; }
+  if (state.rateTIE) { const el = document.getElementById('rateTIE'); if(el) el.value = state.rateTIE; }
+  if (state.rateGST) { const el = document.getElementById('rateGST'); if(el) el.value = state.rateGST; }
+  const wce = document.getElementById('workshopChargesEnabled');
+  if (wce && state.workshopChargesEnabled !== undefined) wce.checked = state.workshopChargesEnabled;
+  const fst = document.getElementById('forceSpTie');
+  if (fst) fst.checked = !!state.forceSpTie;
+
+  // Workshop overall price & dates
+  if (document.getElementById('overallCoursePrice'))     document.getElementById('overallCoursePrice').value = state.overallCoursePrice || '';
+  if (document.getElementById('overallCoursePriceNote')) document.getElementById('overallCoursePriceNote').value = state.overallCoursePriceNote || '';
+
+  if (state.type === 'workshop') {
+    // Date mode
+    const mode = state.dateMode || 'continuous';
+    setDateMode(mode);
+    if (mode === 'continuous') {
+      if (state.dateFrom) document.getElementById('dateFrom').value = state.dateFrom;
+      if (state.dateTo)   document.getElementById('dateTo').value   = state.dateTo;
+    } else if (state.specificDates && state.specificDates.length) {
+      specificDateCount = 0;
+      document.getElementById('specificDatesList').innerHTML = '';
+      state.specificDates.forEach(d => {
+        addSpecificDate();
+        const inputs = document.querySelectorAll('[id^="spec-date-"]');
+        inputs[inputs.length-1].value = d;
+      });
+      updateSpecificDaysCount();
+    }
+    // Workshop items
+    (state.workshopItems || []).forEach(wi => {
+      addWorkshopItem(wi.wtype);
+      const wid = workshopItemCount;
+      if (wi.wtype === 'custom' && wi.customLabel) {
+        const cl = document.getElementById('wi-customlabel-'+wid);
+        if (cl) cl.value = wi.customLabel;
+      }
+      const det = document.getElementById('wi-detail-'+wid);
+      if (det && wi.detail) det.value = wi.detail;
+    });
+  } else {
+    // Line items
+    (state.lineItems || []).forEach(item => {
+      addLineItem();
+      const id = lineItemCount;
+      document.getElementById('li-desc-'+id).value = item.desc || '';
+      document.getElementById('li-qty-'+id).value  = item.qty  || '1';
+      document.getElementById('li-hrs-'+id).value  = item.hrs  || '0';
+      const hrsUnitEl = document.getElementById('li-hrsunit-'+id);
+      if (hrsUnitEl && item.hrsunit) hrsUnitEl.value = item.hrsunit;
+      if (item.type) {
+        document.getElementById('li-type-'+id).value = item.type;
+        onMaterialChange(id);
+        // Restore sub-fields after onMaterialChange creates them
+        setTimeout(() => {
+          if (item.size)    { const s = document.getElementById('li-size-'+id);    if(s) s.value = item.size; }
+          if (item.thick)   { const t = document.getElementById('li-thick-'+id);   if(t) t.value = item.thick; }
+          if (item.tier)    { const r = document.getElementById('li-tier-'+id);    if(r) r.value = item.tier; }
+          if (item.filament){ const f = document.getElementById('li-filament-'+id); if(f) f.value = item.filament; }
+          if (item.grams)     { const g = document.getElementById('li-grams-'+id);       if(g) g.value = item.grams; }
+          if (item.colourMode){ const c = document.getElementById('li-colourmode-'+id); if(c) c.value = item.colourMode; }
+          if (item.gypsumShape) {
+            const gs = document.getElementById('li-gypsum-shape-'+id);
+            if(gs) { gs.value = item.gypsumShape; onGypsumShapeChange(id); }
+          }
+          if (item.gypsumPrice) { const gp = document.getElementById('li-gypsum-price-'+id); if(gp) gp.value = item.gypsumPrice; }
+          calcTotal();
+        }, 0);
+      }
+    });
+    // Accessories
+    (state.accessories || []).forEach(acc => {
+      addAccessory();
+      const id = accessoryCount;
+      const descEl = document.getElementById('acc-desc-'+id);
+      const qtyEl  = document.getElementById('acc-qty-'+id);
+      const unitEl = document.getElementById('acc-unit-'+id);
+      const costEl = document.getElementById('acc-cost-'+id);
+      if (descEl) descEl.value = acc.desc || '';
+      if (qtyEl)  qtyEl.value  = acc.qty  || '1';
+      if (unitEl) unitEl.value = acc.unit || 'pcs';
+      if (costEl) costEl.value = acc.cost || '0';
+    });
+  }
+
+  setTimeout(calcTotal, 50);
+}
+
+async function duplicateEntry(id) {
+  try {
+    const entry = await getEntryById(id);
+    if (!entry) { notify('Could not find quote.'); return; }
+    if (!entry.formState) {
+      notify('This quote was saved before duplication was supported. Please re-save it first.');
+      return;
+    }
+    // Switch to builder tab
+    const builderTab = document.querySelector('.tab');
+    switchTab('builder', builderTab);
+    // Restore form state
+    restoreFormState(entry.formState);
+    // Update date to today, but leave ref no as-is (staff fills it in)
+    const today = new Date();
+    document.getElementById('quoteDate').value = today.toISOString().split('T')[0];
+    document.getElementById('refNo').value = '';
+    notify('Quote duplicated — update the Ref No. and client details as needed.');
+  } catch(e) {
+    console.error('duplicateEntry error:', e);
+    notify('Could not duplicate quote.');
+  }
+}
+
+function resetForm() {
+  if (!confirm('Reset all fields? This will clear everything in the Quote Builder.\n\nSaved quotes in the Quote Log will NOT be affected.')) return;
+
+  // ── Project info ──────────────────────────────────────────────
+  const compN = document.getElementById('companyName');
+  if (compN) compN.value = '';
+  document.getElementById('clientName').value = '';
+  document.getElementById('jobTitle').value = '';
+
+  // Reset date to today, leave ref no blank
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2,'0');
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const yyyy = today.getFullYear();
+  document.getElementById('refNo').value = '';
+  document.getElementById('quoteDate').value = yyyy + '-' + mm + '-' + dd;
+
+  // ── Quote type → reset to Internal ───────────────────────────
+  document.querySelector('input[name="quoteType"][value="internal"]').checked = true;
+
+  // ── Line items & accessories ──────────────────────────────────
+  document.getElementById('lineItems').innerHTML = '';
+  document.getElementById('accessories').innerHTML = '';
+  lineItemCount = 0; accessoryCount = 0;
+
+  // ── Fees toggles — all off ────────────────────────────────────
+  ['toggleDesign','toggleExpedited','toggleHelpers','toggleStaff','toggleProjExp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = false;
+  });
+  ['designFields','expeditedFields','helperFields','staffFields','projExpFields'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+
+  // ── Design fee defaults ───────────────────────────────────────
+  const dm = document.getElementById('designMode');
+  if (dm) dm.value = 'percent';
+  const dv = document.getElementById('designValue');
+  if (dv) dv.value = '20';
+  updateDesignValueLabel();
+
+  // ── Student helpers defaults ──────────────────────────────────
+  const hc = document.getElementById('helperCount');
+  if (hc) hc.value = '1';
+  const hh = document.getElementById('helperHours');
+  if (hh) hh.value = '0';
+
+  // ── Staff charges defaults ────────────────────────────────────
+  document.getElementById('staffItems').innerHTML = '';
+  staffItemCount = 0;
+
+  // ── Project expenses defaults ─────────────────────────────────
+  document.getElementById('projExpItems').innerHTML = '';
+  projExpItemCount = 0;
+
+  // ── Rate defaults ─────────────────────────────────────────────
+  const rSP  = document.getElementById('rateSP');  if (rSP)  { rSP.value  = '18.5'; rSP.readOnly  = true; }
+  const rTIE = document.getElementById('rateTIE'); if (rTIE) { rTIE.value = '11.5'; rTIE.readOnly = true; }
+  const rGST = document.getElementById('rateGST'); if (rGST) { rGST.value = '9';    rGST.readOnly = true; }
+  const reb  = document.getElementById('rateEditBtn'); if (reb) { reb.textContent = '🔒 Edit'; reb.style.color = 'var(--text-muted)'; reb.style.borderColor = 'var(--border)'; }
+  const wce2 = document.getElementById('workshopChargesEnabled'); if (wce2) wce2.checked = true;
+  const fst2 = document.getElementById('forceSpTie'); if (fst2) fst2.checked = false;
+
+  // ── Workshop / Course fields ──────────────────────────────────
+  // Reset date mode to continuous
+  setDateMode('continuous');
+  const dateFrom = document.getElementById('dateFrom');
+  if (dateFrom) dateFrom.value = '';
+  const dateTo = document.getElementById('dateTo');
+  if (dateTo) dateTo.value = '';
+  // Clear specific dates
+  const specList = document.getElementById('specificDatesList');
+  if (specList) specList.innerHTML = '';
+  // Clear course components (workshop items)
+  const wsItems = document.getElementById('workshopItems');
+  if (wsItems) wsItems.innerHTML = '';
+  // Re-enable all workshop module add-buttons (remove 'used' class added by addWorkshopItem)
+  document.querySelectorAll('.wi-btn').forEach(btn => {
+    btn.classList.remove('used');
+  });
+  // Also reset the workshopItemCount
+  workshopItemCount = 0;
+  // Clear overall course fee
+  const ocf = document.getElementById('overallCoursePrice');
+  if (ocf) ocf.value = '';
+  const ocn = document.getElementById('overallCoursePriceNote');
+  if (ocn) ocn.value = '';
+
+  // ── Cancel any active edit mode ───────────────────────────────
+  if (editingEntryId) {
+    editingEntryId = null;
+    const banner = document.getElementById('editingBanner');
+    if (banner) banner.style.display = 'none';
+    updateSaveBtnLabels(false);
+  }
+
+  // ── Re-apply quote type UI, add default items ─────────────────
+  updateQuoteType();
+  addLineItem();
+  addAccessory();
+  calcTotal();
+  notify('Quote Builder cleared.');
+}
+
+
+// ============================================================
+// BACKUP & RESTORE (CSV)
+// ============================================================
+async function backupLog() {
+  const entries = await getLog();
+  if (!entries.length) { notify('No quotes to back up.'); return; }
+
+  // Build CSV — each row is one quote, full JSON state in last column
+  const header = ['id','refNo','client','jobTitle','type','date','total','saved','state_json'];
+  const rows = entries.map(e => {
+    try {
+      const safeJson = JSON.stringify(e).replace(/"/g, '""'); // escape quotes for CSV
+      return [
+        e.id,
+        '"' + (e.refNo || '').replace(/"/g,'""') + '"',
+        '"' + (e.client || '').replace(/"/g,'""') + '"',
+        '"' + (e.jobTitle || '').replace(/"/g,'""') + '"',
+        e.type || '',
+        e.date || '',
+        (e.total || 0).toFixed(2),
+        e.saved || '',
+        '"' + safeJson + '"'
+      ].join(',');
+    } catch(err) { return null; }
+  }).filter(Boolean);
+
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = 'FabLab_QuoteLog_Backup_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  notify('Backup downloaded — ' + rows.length + ' quote(s).');
+}
+
+function restoreLog(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const lines = e.target.result.split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) { notify('File appears empty.'); return; }
+
+      // Parse CSV — last column is full JSON, may contain commas inside quotes
+      let imported = 0, skipped = 0, updated = 0;
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          // Find the last quoted JSON column by locating the opening of the last "{"
+          const line = lines[i];
+          // The state_json column starts after the 8th comma (columns 0-7), quoted
+          // Find the first " after the 8th comma
+          let commaCount = 0, jsonStart = -1;
+          for (let c = 0; c < line.length; c++) {
+            if (line[c] === ',' && commaCount < 8) {
+              commaCount++;
+              if (commaCount === 8) { jsonStart = c + 2; break; } // skip the opening quote
+            }
+          }
+          if (jsonStart < 0) { skipped++; continue; }
+          // The JSON runs to the last character minus the closing quote
+          const rawJson = line.slice(jsonStart, line.length - 1).replace(/""/g, '"');
+          const entry = JSON.parse(rawJson);
+          if (!entry.id) { skipped++; continue; }
+
+          // Save to SharePoint
+          const existing = await getEntryById(entry.id);
+          if (existing) { updated++; } else { imported++; }
+          await saveToLog(entry);
+        } catch(lineErr) { skipped++; }
+      }
+
+      renderLog();
+      updateFYSummary();
+      const msg = imported + ' imported, ' + updated + ' updated' + (skipped ? ', ' + skipped + ' skipped' : '') + '.';
+      notify('Restore complete — ' + msg);
+    } catch(parseErr) {
+      notify('Could not read backup file. Make sure it\'s a valid CSV backup.');
+    }
+    // Reset file input so the same file can be re-selected
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ============================================================
+// NOTIFY
+// ============================================================
+function notify(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// RATES PANEL — render editable tables
+// ============================================================
+function getRatesColors() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    rowBg:    dark ? '#22262f' : '#f9fafb',
+    rowBorder:dark ? '#2e3340' : '#e5e7eb',
+    hdrBg:    dark ? '#2a2f3a' : '#f3f4f6',
+    muted:    dark ? '#9ca3af' : '#6b7280',
+    text:     dark ? '#e8eaf0' : '#1a1d23',
+  };
+}
+
+function renderRatesPanel() {
+  const C = getRatesColors();
+
+  // Machine rates
+  const mr = document.getElementById('machineRatesTable');
+  if (mr) {
+    mr.innerHTML = Object.entries(MACHINE_RATES).map(([k,v]) => `
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};border-radius:6px;">
+        <input type="text" value="${MACHINE_LABELS[k]?.split(' (')[0] || k}" id="ml-${k}" style="font-weight:700;" placeholder="Machine name">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:${C.muted};">$/hr</span>
+          <input type="number" value="${v}" id="mr-${k}" min="0" step="0.5" oninput="updateMachineRate('${k}')" style="width:100%;">
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="deleteMachineRate('${k}')">✕</button>
+      </div>`).join('');
+  }
+
+  // Acrylic grid
+  renderGridTable('acrylicTable', 'acrylic',
+    ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,10], 'Size', 'Thickness (mm)');
+
+  // Plywood grid
+  renderGridTable('plywoodTable', 'plywood',
+    ['A7','A6','A5','A4','A3','A2','A1','A0'], [3,5,15,20,28], 'Size', 'Thickness (mm)');
+
+  // Acrylic Mirror Silver
+  renderMirrorTable('acrylicSilverTable', 'acrylic_silver');
+  // Acrylic Mirror Gold
+  renderMirrorTable('acrylicGoldTable', 'acrylic_gold');
+
+  // Vinyl
+  const vt = document.getElementById('vinylTable');
+  if (vt) {
+    vt.innerHTML = Object.entries(PRICES.vinyl).map(([tier,price]) => `
+      <div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};border-radius:6px;">
+        <div style="font-size:12px;font-weight:700;color:${C.text};">${{small:'Small (up to 0.3m)',medium:'Medium (0.3–1m)',large:'Large (1–2m)',xlarge:'Extra Large (2–5m)'}[tier]}</div>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:${C.muted};">$</span>
+        <input type="number" value="${price}" id="vinyl-${tier}" min="0" step="1" oninput="PRICES.vinyl['${tier}']=parseFloat(this.value)||0;updateVinylDisplays();" style="width:100%;"></div>
+      </div>`).join('');
+  }
+
+  // Cardboard
+  renderCardboardTable('cardboardSingleTable', 'cardboard_single');
+  renderCardboardTable('cardboardDoubleTable', 'cardboard_double');
+
+  // 3D print rate
+  const pt = document.getElementById('printRateTable');
+  if (pt) {
+    const rate = PRICES._3dprint_rate || 25;
+    pt.innerHTML = `<div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;padding:8px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};border-radius:6px;">
+      <div style="font-size:12px;font-weight:700;color:${C.text};">PLA / PETG rate ($ per kg)</div>
+      <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:${C.muted};">$</span>
+      <input type="number" value="${rate}" id="printRate" min="0" step="1" oninput="PRICES._3dprint_rate=parseFloat(this.value)||25;" style="width:100%;"></div>
+    </div>`;
+  }
+
+  // Gypsum
+  const gt = document.getElementById('gypsumTable');
+  if (gt) {
+    gt.innerHTML = Object.entries(PRICES.gypsum).map(([shape,price]) => `
+      <div style="display:grid;grid-template-columns:200px 120px;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};border-radius:6px;">
+        <div style="font-size:12px;font-weight:700;color:${C.text};">${shape.charAt(0).toUpperCase()+shape.slice(1).replace('_',' ')}</div>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:${C.muted};">$</span>
+        <input type="number" value="${price||''}" id="gypsum-${shape}" min="0" step="0.5" placeholder="custom"
+          oninput="PRICES.gypsum['${shape}']=parseFloat(this.value)||null;" style="width:100%;"></div>
+      </div>`).join('');
+  }
+}
+
+function renderGridTable(containerId, priceKey, rows, cols, rowLabel, colLabel) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const C = getRatesColors();
+  let html = `<table style="border-collapse:collapse;min-width:400px;">
+    <thead><tr><th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;text-align:left;color:${C.text};">${rowLabel} \ ${colLabel}</th>`;
+  cols.forEach(c => html += `<th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;text-align:center;color:${C.text};">${c}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach(row => {
+    html += `<tr><td style="padding:6px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};font-weight:700;font-size:12px;color:${C.text};">${row}</td>`;
+    cols.forEach(col => {
+      const val = PRICES[priceKey]?.[row]?.[col] ?? '';
+      html += `<td style="padding:4px 6px;border:1px solid ${C.rowBorder};">
+        <input type="number" value="${val}" min="0" step="0.5" style="width:70px;text-align:right;"
+          oninput="if(!PRICES['${priceKey}']) PRICES['${priceKey}']={};
+                   if(!PRICES['${priceKey}']['${row}']) PRICES['${priceKey}']['${row}']={};
+                   PRICES['${priceKey}']['${row}'][${typeof col==='number'?col:`'${col}'`}]=parseFloat(this.value)||0;">
+      </td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderCardboardTable(containerId, priceKey) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const C = getRatesColors();
+  const thicknesses = ['1','3','5','10','15'];
+  const sizes = ['A0','A1','A2','A3'];
+  let html = `<table style="border-collapse:collapse;">
+    <thead><tr><th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.text};">Thickness \ Size</th>`;
+  sizes.forEach(s => html += `<th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;text-align:center;color:${C.text};">${s}</th>`);
+  html += '</tr></thead><tbody>';
+  thicknesses.forEach(t => {
+    html += `<tr><td style="padding:6px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};font-weight:700;font-size:12px;color:${C.text};">${t}mm</td>`;
+    sizes.forEach(s => {
+      const val = PRICES[priceKey]?.[t]?.[s] ?? '';
+      html += `<td style="padding:4px 6px;border:1px solid ${C.rowBorder};">
+        <input type="number" value="${val}" min="0" step="0.5" style="width:70px;text-align:right;"
+          oninput="if(!PRICES['${priceKey}']['${t}']) PRICES['${priceKey}']['${t}']={};
+                   PRICES['${priceKey}']['${t}']['${s}']=parseFloat(this.value)||0;">
+      </td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderMirrorTable(containerId, priceKey) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const C = getRatesColors();
+  const sizes = ['A7','A6','A5','A4','A3','A2','A1','A0'];
+  let html = `<table style="border-collapse:collapse;min-width:400px;">
+    <thead><tr>
+      <th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.text};">Size</th>
+      <th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.text};">Thickness</th>
+      <th style="padding:6px 10px;background:${C.hdrBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.text};">Price ($)</th>
+    </tr></thead><tbody>`;
+  sizes.forEach(size => {
+    const val = PRICES[priceKey]?.[size] ?? '';
+    html += `<tr>
+      <td style="padding:6px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};font-weight:700;font-size:12px;color:${C.text};">${size}</td>
+      <td style="padding:6px 10px;background:${C.rowBg};border:1px solid ${C.rowBorder};font-size:12px;color:${C.muted};">2mm</td>
+      <td style="padding:4px 6px;border:1px solid ${C.rowBorder};">
+        <input type="number" value="${val}" min="0" step="0.5" style="width:80px;text-align:right;"
+          oninput="if(!PRICES['${priceKey}']) PRICES['${priceKey}']={};
+                   PRICES['${priceKey}']['${size}']=parseFloat(this.value)||0;">
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function updateMachineRate(key) {
+  const v = parseFloat(document.getElementById('mr-'+key)?.value) || 0;
+  MACHINE_RATES[key] = v;
+  // Update label display
+  const label = document.getElementById('ml-'+key)?.value || key;
+  const shortLabel = label.replace(/\s*\(.*\)$/, '');
+  MACHINE_LABELS[key] = shortLabel + ' ($' + v + '/hr)';
+}
+
+function deleteMachineRate(key) {
+  if (!confirm('Remove machine "' + (MACHINE_LABELS[key] || key) + '"?')) return;
+  delete MACHINE_RATES[key];
+  delete MACHINE_LABELS[key];
+  renderRatesPanel();
+}
+
+function addMachineRate() {
+  const name = prompt('Machine name (e.g. Vinyl Cutter):');
+  if (!name) return;
+  const rate = parseFloat(prompt('Hourly rate ($):') || '0');
+  const key = name.toLowerCase().replace(/\s+/g,'_');
+  MACHINE_RATES[key] = rate;
+  MACHINE_LABELS[key] = name + ' ($' + rate + '/hr)';
+  renderRatesPanel();
+  notify('Machine added: ' + name);
+}
+
+function updateVinylDisplays() {
+  // Update any open vinyl price displays
+  document.querySelectorAll('[id^="li-vinyl-price-"]').forEach(el => {
+    const id = el.id.replace('li-vinyl-price-','');
+    updateVinylPrice(parseInt(id));
+  });
+}
+
+// ============================================================
+// EDIT LOG ENTRY MODAL
+// ============================================================
+let currentEditId = null;
+
+async function openEditModal(id) {
+  try {
+    const entry = await getEntryById(id);
+    if (!entry) return;
+    currentEditId = id;
+    // Strip SP-TTC/ prefix for display (it's stored in refNo with prefix)
+    document.getElementById('editClientName').value = entry.client || '';
+    document.getElementById('editJobTitle').value = entry.jobTitle || '';
+    document.getElementById('editRefNo').value = entry.refNo || '';
+    document.getElementById('editDate').value = entry.date || '';
+    document.getElementById('editModal').classList.add('show');
+  } catch(e) { notify('Could not open entry.'); }
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('show');
+  currentEditId = null;
+}
+
+function closeEditOnBg(e) {
+  if (e.target.id === 'editModal') closeEditModal();
+}
+
+async function saveEditModal() {
+  if (!currentEditId) return;
+  try {
+    const entry = await getEntryById(currentEditId);
+    if (!entry) return;
+    entry.client   = document.getElementById('editClientName').value;
+    entry.jobTitle = document.getElementById('editJobTitle').value;
+    entry.refNo    = document.getElementById('editRefNo').value;
+    entry.date     = document.getElementById('editDate').value;
+    // Update formState too
+    if (entry.formState) {
+      entry.formState.clientName = entry.client;
+      entry.formState.jobTitle   = entry.jobTitle;
+      entry.formState.refNo      = entry.refNo.replace(/^SP-TTC\//,'');
+      entry.formState.date       = entry.date;
+    }
+    await saveToLog(entry);
+    closeEditModal();
+    renderLog();
+    notify('Quote updated ✓');
+  } catch(e) { notify('Could not save changes.'); }
+}
+
+// ============================================================
+// FY SUMMARY SIDEBAR
+// ============================================================
+function getFYBounds(fy) {
+  // FY26 = Apr 2025 – Mar 2026
+  const startYear = 2000 + parseInt(fy) - 1;
+  const start = new Date(startYear, 3, 1);   // Apr 1
+  const end   = new Date(startYear + 1, 2, 31, 23, 59, 59); // Mar 31
+  return { start, end };
+}
+
+function renderFYSummary(entries) {
+  const fy = document.getElementById('fySelect')?.value || '26';
+  const { start, end } = getFYBounds(fy);
+  const label = 'FY' + fy;
+  const fyEl = document.getElementById('fyLabel');
+  if (fyEl) fyEl.textContent = label;
+
+  // Filter entries within FY (use quote date, not saved date)
+  const fyEntries = entries.filter(e => {
+    const d = new Date(e.date);
+    return d >= start && d <= end;
+  });
+
+  const totals = { internal:0, external:0, workshop:0 };
+  let grand = 0;
+  let totalHelpers = 0;
+  fyEntries.forEach(e => {
+    totals[e.type] = (totals[e.type] || 0) + (e.total || 0);
+    grand += (e.total || 0);
+    totalHelpers += (e.helperCount || 0);
+  });
+
+  const summaryLines = document.getElementById('fySummaryLines');
+  if (summaryLines) {
+    const fyRows = [
+      ['Quotes in period', fyEntries.length + ' quote' + (fyEntries.length !== 1 ? 's' : '')],
+    ];
+    if (totalHelpers > 0) fyRows.push(['Student Helpers/Agents involved', totalHelpers + ' student' + (totalHelpers !== 1 ? 's' : '')]);
+    summaryLines.innerHTML = fyRows.map(([l,v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <span style="color:var(--text-muted);">${l}</span><span style="font-weight:700;">${v}</span></div>`).join('');
+  }
+
+  const grandEl = document.getElementById('fyGrandTotal');
+  if (grandEl) grandEl.textContent = '$' + grand.toFixed(2);
+
+  const catLines = document.getElementById('fyCategoryLines');
+  if (catLines) {
+    const cats = [
+      { key:'internal',  label:'Internal',          color:'#1d4ed8', bg:'#eff6ff' },
+      { key:'external',  label:'External',           color:'#b45309', bg:'#fffbeb' },
+      { key:'workshop',  label:'Workshop / Course',  color:'#15803d', bg:'#f0fdf4' },
+    ];
+    catLines.innerHTML = cats.map(c => `
+      <div style="background:${c.bg};border-radius:8px;padding:12px 14px;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;color:${c.color};margin-bottom:4px;">${c.label}</div>
+        <div style="font-size:18px;font-weight:800;color:${c.color};">$${(totals[c.key]||0).toFixed(2)}</div>
+        <div style="font-size:10px;color:${c.color};opacity:0.7;margin-top:2px;">
+          ${fyEntries.filter(e=>e.type===c.key).length} quote${fyEntries.filter(e=>e.type===c.key).length!==1?'s':''}
+        </div>
+      </div>`).join('');
+  }
+}
+
+
+
+// ── Update save button labels when entering/exiting edit mode ──
+function updateSaveBtnLabels(isEditing) {
+  const headerBtn   = document.getElementById('headerSaveBtn');
+  const sidebarBtn  = document.getElementById('sidebarSaveBtn');
+  if (isEditing) {
+    if (headerBtn)  { headerBtn.textContent  = '✏️ Update'; headerBtn.style.background = '#d97706'; headerBtn.style.borderColor = '#d97706'; }
+    if (sidebarBtn) { sidebarBtn.textContent = '✏️ Update'; }
+  } else {
+    if (headerBtn)  { headerBtn.textContent  = '💾 Save'; headerBtn.style.background = ''; headerBtn.style.borderColor = ''; }
+    if (sidebarBtn) { sidebarBtn.textContent = '💾 Save'; }
+  }
+}
+
+// ============================================================
+// EDIT ENTRY — Full page edit via builder
+// ============================================================
+let editingEntryId = null;  // tracks if we are editing an existing log entry
+
+async function editEntry(id) {
+  try {
+    const entry = await getEntryById(id);
+    if (!entry) { notify('Could not find quote.'); return; }
+    if (!entry.formState) {
+      notify('This quote was saved before edit is supported. Please use Duplicate instead.');
+      return;
+    }
+    editingEntryId = id;
+    // Switch to builder
+    const builderTab = document.querySelector('.tab');
+    switchTab('builder', builderTab);
+    restoreFormState(entry.formState);
+    // Show editing banner
+    const banner = document.getElementById('editingBanner');
+    if (banner) { banner.style.display = 'flex'; }
+    updateSaveBtnLabels(true);
+    notify('Quote loaded for editing — make your changes and click "Update".');
+  } catch(e) { notify('Could not load quote for editing.'); }
+}
+
+function cancelEdit() {
+  editingEntryId = null;
+  const banner = document.getElementById('editingBanner');
+  if (banner) banner.style.display = 'none';
+  updateSaveBtnLabels(false);
+  notify('Edit cancelled.');
+}
+
+
+function downloadFYSummary() {
+  const fy = document.getElementById('fySelect')?.value || '26';
+  const { start, end } = getFYBounds(fy);
+  const allEntries = getLog();
+  const fyEntries = allEntries.filter(e => {
+    const d = new Date(e.date);
+    return d >= start && d <= end;
+  }).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  if (fyEntries.length === 0) { notify('No quotes found for FY' + fy + '.'); return; }
+
+  // Build CSV
+  const rows = [['Ref No','Date','Client','Project Title','Type','Total (SGD)','Saved']];
+  fyEntries.forEach(e => {
+    rows.push([
+      '"' + (e.refNo || '').replace(/"/g,'""') + '"',
+      e.date || '',
+      '"' + (e.client || '').replace(/"/g,'""') + '"',
+      '"' + (e.jobTitle || '').replace(/"/g,'""') + '"',
+      e.type || '',
+      e.total ? e.total.toFixed(2) : '0.00',
+      e.saved ? new Date(e.saved).toLocaleDateString() : ''
+    ]);
+  });
+
+  // Summary footer
+  const total = fyEntries.reduce((s,e) => s + (e.total||0), 0);
+  const intTotal = fyEntries.filter(e=>e.type==='internal').reduce((s,e)=>s+(e.total||0),0);
+  const extTotal = fyEntries.filter(e=>e.type==='external').reduce((s,e)=>s+(e.total||0),0);
+  const wsTotal  = fyEntries.filter(e=>e.type==='workshop').reduce((s,e)=>s+(e.total||0),0);
+  rows.push([]);
+  rows.push(['"=== FY' + fy + ' SUMMARY ==="']);
+  rows.push(['"Total Quotes"', fyEntries.length]);
+  rows.push(['"FY Grand Total"', total.toFixed(2)]);
+  rows.push(['"Internal Total"', intTotal.toFixed(2)]);
+  rows.push(['"External Total"', extTotal.toFixed(2)]);
+  rows.push(['"Workshop Total"', wsTotal.toFixed(2)]);
+
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'FY' + fy + '_Quote_Summary.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  notify('FY' + fy + ' summary downloaded.');
+}
+
+</script>
+</body>
+</html>
