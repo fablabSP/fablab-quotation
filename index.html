@@ -859,31 +859,16 @@
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="toggle-label">Staff Charges</div>
-              <div class="toggle-desc">Staff rate × hours × number of staff</div>
+              <div class="toggle-desc">Rate × hours × count per staff line</div>
             </div>
-            <label class="toggle"><input type="checkbox" id="toggleStaff" onchange="toggleSection('staffFields')"><span class="toggle-slider"></span></label>
+            <label class="toggle"><input type="checkbox" id="toggleStaff" onchange="toggleSection('staffFields'); if(this.checked && document.getElementById('staffItems').children.length===0) addStaffItem();"><span class="toggle-slider"></span></label>
           </div>
           <div class="conditional" id="staffFields">
             <div class="conditional-inner">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Rate ($/hr)</label>
-                  <input type="number" id="staffRate" value="0" min="0" step="0.01" oninput="calcTotal()">
-                </div>
-                <div class="form-group">
-                  <label>Hours</label>
-                  <input type="number" id="staffHours" value="0" min="0" step="0.5" oninput="calcTotal()">
-                </div>
-                <div class="form-group">
-                  <label>No. of Staff</label>
-                  <input type="number" id="staffCount" value="1" min="1" oninput="calcTotal()">
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Staff Charges Total</label>
-                  <input type="text" id="staffCostDisplay" readonly>
-                </div>
+              <div id="staffItems"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                <button class="btn btn-ghost btn-sm" onclick="addStaffItem()" style="font-size:12px;">＋ Add Staff Line</button>
+                <div style="font-size:12px;color:var(--text-muted);">Total: <strong id="staffCostDisplay" style="color:var(--text);">$0.00</strong></div>
               </div>
             </div>
           </div>
@@ -1715,16 +1700,14 @@ function calcTotal() {
   workshopTotal = overallPrice;
   subtotal += workshopTotal;
 
-  // Staff charges
+  // Staff charges — multi-item
   const staffOn = document.getElementById('toggleStaff')?.checked;
   let staffCost = 0;
   if (staffOn) {
-    const rate = parseFloat(document.getElementById('staffRate')?.value||0);
-    const hrs2 = parseFloat(document.getElementById('staffHours')?.value||0);
-    const count2 = parseInt(document.getElementById('staffCount')?.value||1);
-    staffCost = rate * hrs2 * count2;
+    const items = getStaffItems();
+    staffCost = items.reduce((sum, it) => sum + it.sub, 0);
     const scd = document.getElementById('staffCostDisplay');
-    if (scd) scd.value = '$' + staffCost.toFixed(2);
+    if (scd) scd.textContent = '$' + staffCost.toFixed(2);
   }
   subtotal += staffCost;
 
@@ -1765,13 +1748,23 @@ function calcTotal() {
   let costExclGST = subtotal, costInclGST = subtotal;
   const workshopChargesOn = !isWorkshopType || (document.getElementById('workshopChargesEnabled')?.checked !== false);
   if (isExternal || (isWorkshopType && workshopChargesOn)) {
-    // SP + TIE apply for external always; workshop only when toggle enabled
-    spCharge = subtotal * rateSP;
-    tieFee   = subtotal * rateTIE;
-  }
-  if (isExternal || isWorkshopType) {
-    // GST always applies for external and workshop regardless of SP/TIE toggle
-    costExclGST = subtotal + spCharge;
+    // Correct formula:
+    //   Overall Project Fee (excl. GST) = nonStaffSubtotal + ROUND(staffCost / 0.7, 2)
+    //   SP and TIE are informational breakdowns of the grossed-up staff cost
+    const nonStaffSubtotal = subtotal - staffCost;
+    const grossedStaff = staffCost > 0 ? Math.ceil(staffCost / 0.7 * 100) / 100 : 0;
+    costExclGST = nonStaffSubtotal + grossedStaff;
+    // Informational breakdown of the uplift (grossedStaff - staffCost = overhead)
+    // SP and TIE are portions of the grossed-up base shown for staff reference only
+    const grossBase = staffCost > 0 ? grossedStaff : subtotal;
+    spCharge = grossBase * rateSP;   // staff reference only
+    tieFee   = grossBase * rateTIE;  // staff reference only
+    gst         = costExclGST * rateGST;
+    costInclGST = costExclGST + gst;
+    grand       = costInclGST;
+  } else if (isWorkshopType) {
+    // Workshop with charges disabled — GST on subtotal only
+    costExclGST = subtotal;
     gst         = costExclGST * rateGST;
     costInclGST = costExclGST + gst;
     grand       = costInclGST;
@@ -1788,30 +1781,25 @@ function calcTotal() {
   if (projExpAmount > 0) lines.push(['Project Expenses', projExpAmount]);
   if (expeditedFee > 0) lines.push([`Expedited (${expPctLabel}%)`, expeditedFee]);
   if (designFee > 0) lines.push(['Design Fee', designFee]);
-  if (spCharge > 0) lines.push([`SP Charges (${rateSPpct}%)`, spCharge]);
-  // "Total excl. GST" only meaningful when SP charge is also shown
-  if ((isExternal || (isWorkshopType && workshopChargesOn)) && costExclGST > 0) lines.push(['Total (excl. GST)', costExclGST]);
-  // GST always shown for external and workshop (even when SP/TIE toggle is off)
+  if (isExternal || (isWorkshopType && workshopChargesOn)) {
+    // Show grossed-up staff cost breakdown for staff reference
+    if (staffCost > 0) {
+      const grossedStaffRef = Math.ceil(staffCost / 0.7 * 100) / 100;
+      lines.push(['Overall Project Fee (excl. GST)', costExclGST]);
+    }
+    if (spCharge > 0) lines.push([`🔒 SP Charges (${rateSPpct}%)`, spCharge]);
+    if (tieFee  > 0) lines.push([`🔒 TIE Charges (${rateTIEpct}%)`, tieFee]);
+  }
   if ((isExternal || isWorkshopType) && gst > 0) lines.push([`GST (${rateGSTpct}%)`, gst]);
 
-  // TIE shown as a staff-only informational note — NOT a separate charge line
-  const tieNote = (tieFee > 0)
-    ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0 5px 10px;font-size:11px;color:var(--text-muted);border-left:2px solid #fbbf24;margin:-2px 0 4px 0;">
-        <span>🔒 TIE (${rateTIEpct}%) — incl. in SP Charges</span>
-        <span style="font-weight:600;">$${tieFee.toFixed(2)}</span>
-      </div>`
-    : '';
+  const tieNote = ''; // TIE now shown as a summary line above
 
   const summaryHTML = lines.map(([l,v])=>
     `<div class="summary-line"><span class="lbl">${l}</span><span class="val">${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}</span></div>`
   ).join('');
 
   document.getElementById('summaryLines').innerHTML = summaryHTML
-    ? summaryHTML.replace(
-        `<div class="summary-line"><span class="lbl">Total (excl. GST)</span>`,
-        tieNote + `<div class="summary-line"><span class="lbl">Total (excl. GST)</span>`
-      )
-    : `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
+    || `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
   document.getElementById('summaryTotal').textContent = '$' + grand.toFixed(2);
 
   const fpEl = document.getElementById('finePrintSidebar');
@@ -1836,6 +1824,81 @@ function calcTotal() {
   }
 
   window.__qd = { totalMat, totalMachine, accTotal, workshopTotal, helperCost, staffCost, projExpAmount, expeditedFee, expPctLabel, designFee, spCharge, tieFee, gst, costExclGST, subtotal, grand, isExternal, isWorkshopType, totalHrs, rateSPpct, rateTIEpct, rateGSTpct, workshopChargesOn };
+}
+
+// ============================================================
+// STAFF CHARGES — multi-item
+// ============================================================
+let staffItemCount = 0;
+
+function addStaffItem(role, rate, hrs, count) {
+  staffItemCount++;
+  const id = staffItemCount;
+  const div = document.createElement('div');
+  div.id = 'staff-item-' + id;
+  div.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;';
+  div.innerHTML = `
+    <div class="form-row" style="margin-bottom:6px;">
+      <div class="form-group" style="flex:2;">
+        <label>Role</label>
+        <select id="staff-role-${id}" onchange="calcTotal()">
+          <option value="Lecturer"${(role||'Lecturer')==='Lecturer'?' selected':''}>Lecturer</option>
+          <option value="TSO"${role==='TSO'?' selected':''}>TSO</option>
+          <option value="MSO"${role==='MSO'?' selected':''}>MSO</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:0 0 28px;display:flex;align-items:flex-end;padding-bottom:2px;">
+        <button onclick="removeStaffItem(${id})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:0;line-height:1;" title="Remove">✕</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Rate ($/hr)</label>
+        <input type="number" id="staff-rate-${id}" value="${rate||0}" min="0" step="0.01" oninput="calcStaffItem(${id}); calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Hours</label>
+        <input type="number" id="staff-hrs-${id}" value="${hrs||0}" min="0" step="0.5" oninput="calcStaffItem(${id}); calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Count</label>
+        <input type="number" id="staff-count-${id}" value="${count||1}" min="1" oninput="calcStaffItem(${id}); calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>Subtotal</label>
+        <input type="text" id="staff-sub-${id}" readonly style="font-weight:600;">
+      </div>
+    </div>`;
+  document.getElementById('staffItems').appendChild(div);
+  calcStaffItem(id);
+}
+
+function calcStaffItem(id) {
+  const rate  = parseFloat(document.getElementById('staff-rate-'+id)?.value  || 0);
+  const hrs   = parseFloat(document.getElementById('staff-hrs-'+id)?.value   || 0);
+  const count = parseInt(document.getElementById('staff-count-'+id)?.value   || 1);
+  const sub   = rate * hrs * count;
+  const el    = document.getElementById('staff-sub-'+id);
+  if (el) el.value = '$' + sub.toFixed(2);
+}
+
+function removeStaffItem(id) {
+  const el = document.getElementById('staff-item-'+id);
+  if (el) el.remove();
+  calcTotal();
+}
+
+function getStaffItems() {
+  const items = [];
+  document.querySelectorAll('[id^="staff-item-"]').forEach(div => {
+    const id = div.id.replace('staff-item-','');
+    const rate  = parseFloat(document.getElementById('staff-rate-'+id)?.value  || 0);
+    const hrs   = parseFloat(document.getElementById('staff-hrs-'+id)?.value   || 0);
+    const count = parseInt(document.getElementById('staff-count-'+id)?.value   || 1);
+    const role  = document.getElementById('staff-role-'+id)?.value || '';
+    items.push({ id, role, rate, hrs, count, sub: rate * hrs * count });
+  });
+  return items;
 }
 
 // ============================================================
@@ -2096,12 +2159,15 @@ function buildQuoteDoc() {
   const projExpOn = document.getElementById('toggleProjExp')?.checked;
   let extraRows = '';
   if (staffOn && d.staffCost > 0) {
-    const rate = document.getElementById('staffRate')?.value || '0';
-    const hrs2 = document.getElementById('staffHours')?.value || '0';
-    const cnt = document.getElementById('staffCount')?.value || '1';
-    const leave = '';
-    extraRows += '<tr><td>Staff Charges<div class="qdoc-desc-detail">$' + rate + '/hr × ' + hrs2 + 'hrs × ' + cnt + ' staff' + leave + '</div></td>'
-      + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + d.staffCost.toFixed(2) + '</td></tr>';
+    const items = getStaffItems();
+    items.forEach(it => {
+      if (it.sub > 0 || it.role) {
+        const desc = it.role || 'Staff Charges';
+        const detail = '$' + it.rate.toFixed(2) + '/hr × ' + it.hrs + 'hrs × ' + it.count;
+        extraRows += '<tr><td>' + desc + '<div class="qdoc-desc-detail">' + detail + '</div></td>'
+          + '<td style="text-align:center">1</td><td class="r" colspan="2">—</td><td class="r">$' + it.sub.toFixed(2) + '</td></tr>';
+      }
+    });
   }
   if (projExpOn && d.projExpAmount > 0) {
     const expDesc = document.getElementById('projExpDesc')?.value || 'Project Expenses';
@@ -2113,16 +2179,22 @@ function buildQuoteDoc() {
 
   // ── Totals block ──
   const workshopChargesOnDoc = !isWorkshop || d.workshopChargesOn !== false;
+  // Combined SP+TIE overhead shown on client quote = grossed amount minus staff cost
+  const combinedSPTIE = (d.spCharge || 0) + (d.tieFee || 0);
   const totalRowsArr = [
     (d.helperCost > 0 && !isWorkshop) ? ['Student Helpers / Agent', d.helperCost] : null,
     (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work (' + (d.expPctLabel||50) + '%)', d.expeditedFee] : null,
     (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
-    ['Subtotal', d.subtotal],
-    d.spCharge > 0 ? ['SP Charge Rate', d.spCharge] : null,   // no % on client doc — amount only
-    // Total excl. GST only shown when SP charge is also present
-    (d.spCharge > 0 && (isExternal || isWorkshop) && d.costExclGST > 0) ? ['Total (excl. GST)', d.costExclGST] : null,
-    // GST always applies for external and workshop
-    ((isExternal || isWorkshop) && d.gst > 0) ? ['GST (' + (d.rateGSTpct || 9) + '%)', d.gst] : null,
+    // Show combined SP+TIE as a single "SP Charges" line on the client quote
+    ((isExternal || (isWorkshop && workshopChargesOnDoc)) && combinedSPTIE > 0) ? ['SP Charges', combinedSPTIE] : null,
+    // For external/workshop with charges: show Overall Project Fee (excl. GST)
+    (isExternal || (isWorkshop && workshopChargesOnDoc)) ? ['Overall Project Fee (Excluding GST)', d.costExclGST] : null,
+    // For workshop with charges off: just show subtotal
+    (isWorkshop && !workshopChargesOnDoc) ? ['Subtotal', d.subtotal] : null,
+    // Internal: show subtotal
+    isInternal ? ['Subtotal', d.subtotal] : null,
+    // GST always for external and workshop
+    ((isExternal || isWorkshop) && d.gst > 0) ? ['Prevailing GST:   ' + (d.rateGSTpct || 9) + '%', d.gst] : null,
   ].filter(Boolean).map(([l,v]) => '<div class="qdoc-total-row"><span>'+l+'</span><span class="amt">$'+v.toFixed(2)+'</span></div>').join('');
 
   // ── Vires block (internal only) ──
@@ -2180,7 +2252,7 @@ function buildQuoteDoc() {
     + '</table>'
     + '<div class="qdoc-totals-wrap"><div class="qdoc-totals">'
     +   totalRowsArr
-    +   '<div class="qdoc-total-row grand"><span>TOTAL (SGD)</span><span class="amt">$' + (d.grand?.toFixed(2)||'0.00') + '</span></div>'
+    +   '<div class="qdoc-total-row grand"><span>' + (isInternal ? 'TOTAL (SGD)' : 'Grand Total (Chargeable to Client)') + '</span><span class="amt">$' + (d.grand?.toFixed(2)||'0.00') + '</span></div>'
     + '</div></div>'
     + finePrint
     + viresBlock
@@ -2330,10 +2402,7 @@ function collectFormState() {
     helperCount:   document.getElementById('helperCount')?.value,
     helperHours:   document.getElementById('helperHours')?.value,
     staffOn:       document.getElementById('toggleStaff')?.checked,
-    staffRate:     document.getElementById('staffRate')?.value,
-    staffHours:    document.getElementById('staffHours')?.value,
-    staffCount:    document.getElementById('staffCount')?.value,
-    staffLeave:    document.getElementById('staffLeave')?.value,
+    staffItems:    getStaffItems(),
     projExpOn:     document.getElementById('toggleProjExp')?.checked,
     projExpAmount: document.getElementById('projExpAmount')?.value,
     projExpDesc:   document.getElementById('projExpDesc')?.value,
@@ -2444,10 +2513,7 @@ function collectItems() {
   }
   // Staff charges
   if (document.getElementById('toggleStaff')?.checked) {
-    const rate = document.getElementById('staffRate')?.value || '0';
-    const hrs = document.getElementById('staffHours')?.value || '0';
-    const cnt = document.getElementById('staffCount')?.value || '1';
-    const leave = document.getElementById('staffLeave')?.value === 'yes' ? ' · Leave: Yes' : '';
+    const rate = '—'; const hrs = '—'; const cnt = '—'; const leave = '';
     items.push({ desc: 'Staff Charges', qty: '1', detail: '$'+rate+'/hr × '+hrs+'hrs × '+cnt+' staff'+leave });
   }
   // Project expenses
@@ -2861,11 +2927,15 @@ function restoreFormState(state) {
   if (state.helperCount) { const hc = document.getElementById('helperCount'); if(hc) hc.value = state.helperCount; }
   if (state.helperHours) { const hh = document.getElementById('helperHours'); if(hh) hh.value = state.helperHours; }
 
-  setToggle('toggleStaff',     state.staffOn,     'staffFields');
-  if (state.staffRate)   { const sr = document.getElementById('staffRate');   if(sr) sr.value = state.staffRate; }
-  if (state.staffHours)  { const sh = document.getElementById('staffHours');  if(sh) sh.value = state.staffHours; }
-  if (state.staffCount)  { const sc = document.getElementById('staffCount');  if(sc) sc.value = state.staffCount; }
-  if (state.staffLeave)  { const sl = document.getElementById('staffLeave');  if(sl) sl.value = state.staffLeave; }
+  setToggle('toggleStaff', state.staffOn, 'staffFields');
+  document.getElementById('staffItems').innerHTML = '';
+  staffItemCount = 0;
+  if (state.staffItems && state.staffItems.length) {
+    state.staffItems.forEach(it => addStaffItem(it.role, it.rate, it.hrs, it.count));
+  } else if (state.staffOn) {
+    // Legacy single-item restore
+    addStaffItem('', state.staffRate || 0, state.staffHours || 0, state.staffCount || 1);
+  }
 
   setToggle('toggleProjExp',   state.projExpOn,   'projExpFields');
   if (state.projExpAmount) { const pa = document.getElementById('projExpAmount'); if(pa) pa.value = state.projExpAmount; }
@@ -3031,12 +3101,8 @@ function resetForm() {
   if (hh) hh.value = '0';
 
   // ── Staff charges defaults ────────────────────────────────────
-  const sr = document.getElementById('staffRate');
-  if (sr) sr.value = '0';
-  const sh = document.getElementById('staffHours');
-  if (sh) sh.value = '0';
-  const sc = document.getElementById('staffCount');
-  if (sc) sc.value = '1';
+  document.getElementById('staffItems').innerHTML = '';
+  staffItemCount = 0;
 
   // ── Project expenses defaults ─────────────────────────────────
   const pe = document.getElementById('projExpAmount');
