@@ -1773,7 +1773,13 @@ function calcTotal() {
       const grossBase = staffCost > 0 ? grossedStaff : subtotal;
       spCharge = grossBase * rateSP;
       tieFee   = grossBase * rateTIE;
-      costExclGST = staffCost > 0 ? (nonStaffSubtotal + grossedStaff) : subtotal;
+      // costExclGST must include SP + TIE charges added on top
+      if (staffCost > 0) {
+        costExclGST = nonStaffSubtotal + grossedStaff + spCharge + tieFee;
+      } else {
+        // forceSpTie with no staff — SP/TIE applied on full subtotal
+        costExclGST = subtotal + spCharge + tieFee;
+      }
     } else {
       // No staff, no force — no SP/TIE, just subtotal
       costExclGST = subtotal;
