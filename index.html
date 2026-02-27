@@ -398,6 +398,13 @@
   .summary-line:last-child { border-bottom: none; }
   .summary-line .lbl { color: var(--text-muted); }
   .summary-line .val { font-weight: 700; color: var(--text); }
+  /* Tooltip */
+  .has-tip { position:relative; display:inline-flex; align-items:center; gap:4px; cursor:default; }
+  .tip-icon { display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; background:var(--text-muted); color:var(--surface); font-size:9px; font-weight:700; flex-shrink:0; cursor:help; }
+  .tip-box { display:none; position:absolute; left:0; top:calc(100% + 6px); z-index:999; background:var(--text); color:var(--surface); font-size:11px; line-height:1.5; padding:10px 12px; border-radius:6px; width:280px; font-weight:400; box-shadow:0 4px 16px rgba(0,0,0,0.18); pointer-events:none; }
+  .has-tip:hover .tip-box { display:block; }
+  .summary-line-opf { background: var(--surface2); margin: 4px -8px; padding: 6px 8px !important; border-radius: 4px; border-bottom: 2px solid var(--border) !important; }
+  .summary-line-levy { background: #fffbeb; margin: 1px -8px; padding: 5px 8px !important; border-radius: 3px; }
   .summary-total { background: var(--accent); color: #fff; border-radius: 8px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
   .summary-total .lbl { font-size: 12px; font-weight: 700; }
   .summary-total .val { font-size: 18px; font-weight: 800; }
@@ -884,7 +891,12 @@
         <div id="projExpWrap" style="display:none;">
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="toggle-label">Project Expenses</div>
+              <div class="toggle-label">
+                <span class="has-tip">Project Expenses
+                  <span class="tip-icon">?</span>
+                  <span class="tip-box">When budgeting, please consider including transport, communication, meals with clients, stationery, refreshments, equipment usage, hardware and software costs, consumables (electronics, LAN supplies, and other materials used), and cash vouchers to the total project expenditures.</span>
+                </span>
+              </div>
               <div class="toggle-desc">Miscellaneous project costs</div>
             </div>
             <label class="toggle"><input type="checkbox" id="toggleProjExp" onchange="toggleSection('projExpFields'); if(this.checked && document.getElementById('projExpItems').children.length===0) addProjExpItem();"><span class="toggle-slider"></span></label>
@@ -917,7 +929,12 @@
 
           <div class="form-row form-row-3">
             <div class="form-group">
-              <label>SP Charges</label>
+              <label>
+                <span class="has-tip">SP Charges
+                  <span class="tip-icon">?</span>
+                  <span class="tip-box">Lab or classroom or Office rental charge and equipment rental charge. It is computed at 30% of the consultancy fee*. Refer to guidelines Consultancy Work Staff Claim item 1. Approval from the respective S&amp;D Director is required for revenue sharing.</span>
+                </span>
+              </label>
               <div style="display:flex;align-items:center;gap:4px;">
                 <input type="number" id="rateSP" value="18.5" min="0" max="100" step="0.1" style="width:100%;" oninput="calcTotal()" readonly>
                 <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">%</span>
@@ -938,13 +955,7 @@
               </div>
             </div>
           </div>
-          <!-- Force SP/TIE when no staff charges -->
-          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-muted);">
-              <input type="checkbox" id="forceSpTie" onchange="calcTotal()" style="width:14px;height:14px;cursor:pointer;">
-              Apply SP &amp; TIE charges even without Staff Charges
-            </label>
-          </div>
+
         </div>
 
       </div>
@@ -1761,27 +1772,22 @@ function calcTotal() {
   let spCharge = 0, tieFee = 0, gst = 0, grand = subtotal;
   let costExclGST = subtotal, costInclGST = subtotal;
   const workshopChargesOn = !isWorkshopType || (document.getElementById('workshopChargesEnabled')?.checked !== false);
-  const forceSpTie = document.getElementById('forceSpTie')?.checked;
-  const spTieApplies = staffCost > 0 || forceSpTie;
+  const spTieApplies = staffCost > 0; // SP/TIE only applies when staff charges are present
   if (isExternal || (isWorkshopType && workshopChargesOn)) {
     // Correct formula:
-    //   Overall Project Fee (excl. GST) = nonStaffSubtotal + ROUNDUP(staffCost / 0.7, 2)
-    //   SP and TIE only apply when there are staff charges OR forceSpTie is checked
+    //   grossedStaff = staffCost / 0.70  (the ÷0.7 gross-up ALREADY embeds SP+TIE inside it)
+    //   SP and TIE are INFORMATIONAL breakdowns of what is inside grossedStaff, not additive charges
+    //   Overall Project Fee (excl. GST) = nonStaffSubtotal + grossedStaff
+    //   GST = 9% × Overall Project Fee
     const nonStaffSubtotal = subtotal - staffCost;
     const grossedStaff = staffCost > 0 ? Math.ceil(staffCost / 0.7 * 100) / 100 : 0;
     if (spTieApplies) {
-      const grossBase = staffCost > 0 ? grossedStaff : subtotal;
-      spCharge = grossBase * rateSP;
-      tieFee   = grossBase * rateTIE;
-      // costExclGST must include SP + TIE charges added on top
-      if (staffCost > 0) {
-        costExclGST = nonStaffSubtotal + grossedStaff + spCharge + tieFee;
-      } else {
-        // forceSpTie with no staff — SP/TIE applied on full subtotal
-        costExclGST = subtotal + spCharge + tieFee;
-      }
+      // SP and TIE shown as informational breakdown lines (they sum to 30% of grossedStaff)
+      // They are already inside grossedStaff — do NOT add them to costExclGST
+      spCharge = Math.round(grossedStaff * rateSP  * 100) / 100;
+      tieFee   = Math.round(grossedStaff * rateTIE * 100) / 100;
+      costExclGST = nonStaffSubtotal + grossedStaff;  // SP+TIE already inside grossedStaff
     } else {
-      // No staff, no force — no SP/TIE, just subtotal
       costExclGST = subtotal;
     }
     gst         = costExclGST * rateGST;
@@ -1817,21 +1823,23 @@ function calcTotal() {
   if (expeditedFee > 0) lines.push([`Expedited (${expPctLabel}%)`, expeditedFee]);
   if (designFee > 0) lines.push(['Design Fee', designFee]);
   if (isExternal || (isWorkshopType && workshopChargesOn)) {
-    // Show grossed-up staff cost breakdown for staff reference
-    if (staffCost > 0) {
-      const grossedStaffRef = Math.ceil(staffCost / 0.7 * 100) / 100;
-      lines.push(['Overall Project Fee (excl. GST)', costExclGST]);
-    }
-    if (spCharge > 0) lines.push([`🔒 SP Charges (${rateSPpct}%)`, spCharge]);
-    if (tieFee  > 0) lines.push([`🔒 TIE Charges (${rateTIEpct}%)`, tieFee]);
+    // Always show Overall Project Fee subtotal line before SP/TIE/GST
+    lines.push(['Overall Project Fee (excl. GST)', costExclGST, 'opf']);
+    if (spCharge > 0) lines.push([`🔒 SP Charges (${rateSPpct}%)`, spCharge, 'levy']);
+    if (tieFee  > 0) lines.push([`🔒 TIE Charges (${rateTIEpct}%)`, tieFee, 'levy']);
   }
-  if ((isExternal || isWorkshopType) && gst > 0) lines.push([`GST (${rateGSTpct}%)`, gst]);
+  if ((isExternal || isWorkshopType) && gst > 0) lines.push([`GST (${rateGSTpct}%)`, gst, 'levy']);
 
   const tieNote = ''; // TIE now shown as a summary line above
 
-  const summaryHTML = lines.map(([l,v])=>
-    `<div class="summary-line"><span class="lbl">${l}</span><span class="val">${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}</span></div>`
-  ).join('');
+  const summaryHTML = lines.map(([l,v,type])=>{
+    if (type === 'opf') {
+      return `<div class="summary-line summary-line-opf"><span class="lbl" style="font-weight:600;color:var(--text);">${l}</span><span class="val" style="color:var(--text);">${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}</span></div>`;
+    } else if (type === 'levy') {
+      return `<div class="summary-line summary-line-levy"><span class="lbl" style="color:#7e5c00;">${l}</span><span class="val" style="color:#7e5c00;">${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}</span></div>`;
+    }
+    return `<div class="summary-line"><span class="lbl">${l}</span><span class="val">${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}</span></div>`;
+  }).join('');
 
   document.getElementById('summaryLines').innerHTML = summaryHTML
     || `<div class="summary-line"><span class="lbl" style="color:var(--text-light)">Add items above to begin</span></div>`;
@@ -2272,23 +2280,16 @@ function buildQuoteDoc() {
 
   // ── Totals block ──
   const workshopChargesOnDoc = !isWorkshop || d.workshopChargesOn !== false;
-  // Combined SP+TIE overhead (TIE can be hidden; shown as a single line item on external/workshop quotes)
+  // Combined SP+TIE overhead shown on client quote = grossed amount minus staff cost
   const combinedSPTIE = (d.spCharge || 0) + (d.tieFee || 0);
-
-  // IMPORTANT: d.costExclGST already includes SP+TIE. For the document to "add up" nicely,
-  // show a base fee that excludes SP+TIE, then list SP Charges as a separate line.
-  const baseFeeExclGST = (isExternal || (isWorkshop && workshopChargesOnDoc))
-    ? Math.max(0, (d.costExclGST || 0) - combinedSPTIE)
-    : (d.subtotal || 0);
-
   const totalRowsArr = [
     (d.helperCost > 0 && !isWorkshop) ? ['Student Helper/Agent' + (d.helperCount > 1 ? ' × ' + d.helperCount : ''), d.helperCost] : null,
     (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work', d.expeditedFee] : null,
     (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
-    // For external/workshop with charges: show base fee first
-    (isExternal || (isWorkshop && workshopChargesOnDoc)) ? ['Overall Project Fee (Excluding GST)', baseFeeExclGST] : null,
     // Show combined SP+TIE as a single "SP Charges" line on the client quote
     ((isExternal || (isWorkshop && workshopChargesOnDoc)) && combinedSPTIE > 0) ? ['SP Charges', combinedSPTIE] : null,
+    // For external/workshop with charges: show Overall Project Fee (excl. GST)
+    (isExternal || (isWorkshop && workshopChargesOnDoc)) ? ['Overall Project Fee (Excluding GST)', d.costExclGST] : null,
     // For workshop with charges off: just show subtotal
     (isWorkshop && !workshopChargesOnDoc) ? ['Subtotal', d.subtotal] : null,
     // Internal: show subtotal
@@ -2510,7 +2511,9 @@ function collectFormState() {
     rateTIE:   document.getElementById('rateTIE')?.value,
     rateGST:   document.getElementById('rateGST')?.value,
     workshopChargesEnabled: document.getElementById('workshopChargesEnabled')?.checked,
-    forceSpTie:             document.getElementById('forceSpTie')?.checked,
+
+
+
     rateEditUnlocked: document.getElementById('rateSP')?.readOnly === false && document.querySelector('input[name="quoteType"]:checked')?.value === 'external',
     // Workshop
     overallCoursePrice: document.getElementById('overallCoursePrice')?.value,
@@ -3161,8 +3164,8 @@ function restoreFormState(state) {
   if (state.rateGST) { const el = document.getElementById('rateGST'); if(el) el.value = state.rateGST; }
   const wce = document.getElementById('workshopChargesEnabled');
   if (wce && state.workshopChargesEnabled !== undefined) wce.checked = state.workshopChargesEnabled;
-  const fst = document.getElementById('forceSpTie');
-  if (fst) fst.checked = !!state.forceSpTie;
+
+
 
   // Workshop overall price & dates
   if (document.getElementById('overallCoursePrice'))     document.getElementById('overallCoursePrice').value = state.overallCoursePrice || '';
@@ -3329,8 +3332,9 @@ function resetForm() {
   const rTIE = document.getElementById('rateTIE'); if (rTIE) { rTIE.value = '11.5'; rTIE.readOnly = true; }
   const rGST = document.getElementById('rateGST'); if (rGST) { rGST.value = '9';    rGST.readOnly = true; }
   const reb  = document.getElementById('rateEditBtn'); if (reb) { reb.textContent = '🔒 Edit'; reb.style.color = 'var(--text-muted)'; reb.style.borderColor = 'var(--border)'; }
+
   const wce2 = document.getElementById('workshopChargesEnabled'); if (wce2) wce2.checked = true;
-  const fst2 = document.getElementById('forceSpTie'); if (fst2) fst2.checked = false;
+
 
   // ── Workshop / Course fields ──────────────────────────────────
   // Reset date mode to continuous
