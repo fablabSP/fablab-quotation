@@ -2272,16 +2272,23 @@ function buildQuoteDoc() {
 
   // ── Totals block ──
   const workshopChargesOnDoc = !isWorkshop || d.workshopChargesOn !== false;
-  // Combined SP+TIE overhead shown on client quote = grossed amount minus staff cost
+  // Combined SP+TIE overhead (TIE can be hidden; shown as a single line item on external/workshop quotes)
   const combinedSPTIE = (d.spCharge || 0) + (d.tieFee || 0);
+
+  // IMPORTANT: d.costExclGST already includes SP+TIE. For the document to "add up" nicely,
+  // show a base fee that excludes SP+TIE, then list SP Charges as a separate line.
+  const baseFeeExclGST = (isExternal || (isWorkshop && workshopChargesOnDoc))
+    ? Math.max(0, (d.costExclGST || 0) - combinedSPTIE)
+    : (d.subtotal || 0);
+
   const totalRowsArr = [
     (d.helperCost > 0 && !isWorkshop) ? ['Student Helper/Agent' + (d.helperCount > 1 ? ' × ' + d.helperCount : ''), d.helperCost] : null,
     (d.expeditedFee > 0 && !isWorkshop) ? ['Expedited Work', d.expeditedFee] : null,
     (d.designFee > 0 && !isWorkshop) ? ['Design Fee', d.designFee] : null,
+    // For external/workshop with charges: show base fee first
+    (isExternal || (isWorkshop && workshopChargesOnDoc)) ? ['Overall Project Fee (Excluding GST)', baseFeeExclGST] : null,
     // Show combined SP+TIE as a single "SP Charges" line on the client quote
     ((isExternal || (isWorkshop && workshopChargesOnDoc)) && combinedSPTIE > 0) ? ['SP Charges', combinedSPTIE] : null,
-    // For external/workshop with charges: show Overall Project Fee (excl. GST)
-    (isExternal || (isWorkshop && workshopChargesOnDoc)) ? ['Overall Project Fee (Excluding GST)', d.costExclGST] : null,
     // For workshop with charges off: just show subtotal
     (isWorkshop && !workshopChargesOnDoc) ? ['Subtotal', d.subtotal] : null,
     // Internal: show subtotal
